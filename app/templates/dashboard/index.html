@@ -20,7 +20,7 @@
     {% for bot in bots %}
     <div class="card">
         <h3>{{ bot.name }}</h3>
-        <p class="text-muted mt-1">{{ bot.slug }}</p>
+        <p class="text-muted mt-1" style="font-family:monospace; font-size:0.75rem; letter-spacing:0.05em;">{{ bot.bot_uuid or '—' }}</p>
         <div class="flex gap-1 mt-2">
             <a href="/dashboard/bots/{{ bot._id }}/settings" class="btn btn-secondary">Settings</a>
             <a href="/dashboard/bots/{{ bot._id }}/mistakes" class="btn btn-secondary">Mistakes</a>

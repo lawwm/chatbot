@@ -22,7 +22,7 @@
             <div class="form-group">
                 <label>Permissions</label>
                 {% for value, label in all_permissions %}
-                <label style="display:flex; align-items:center; gap:0.5rem; margin-top:0.4rem; cursor:pointer; font-weight:400;">
+                <label style="display:flex; align-items:center; gap:0.5rem; margin-top:0.4rem; cursor:pointer; font-weight:400; width:fit-content; white-space:nowrap;">
                     <input type="checkbox" name="perm_{{ value }}" value="{{ value }}"> {{ label }}
                 </label>
                 {% endfor %}
@@ -72,7 +72,7 @@
             <td>{{ role.name }}</td>
             <td>
                 {% for value, label in all_permissions %}
-                    {% if role.permission_bitmap | int & value %}
+                    {% if role.permission_bitmap | bitwise_and(value) %}
                     <span class="badge badge-open">{{ label }}</span>
                     {% endif %}
                 {% endfor %}

@@ -1,121 +1,182 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ bot.name }} — Chat</title>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-    <link rel="stylesheet" href="/static/css/main.css">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>:root { --primary: #2563eb; --primary-dark: #1d4ed8; }</style>
 </head>
-<body>
-<div class="chat-wrapper">
-    <nav class="navbar">
-        <a class="brand" href="/bots">Atome Bot Platform</a>
-        <div class="nav-links">
-            <span style="font-size:0.9rem; color:var(--text-muted);">{{ bot.name }}</span>
-            <a href="/bots">All Bots</a>
-            {% if user %}
-            <a href="/dashboard">Dashboard</a>
-            <form method="post" action="/auth/logout" style="display:inline">
-                <button type="submit" class="btn-link">Logout</button>
-            </form>
-            {% else %}
-            <a href="/auth/login">Login</a>
-            {% endif %}
-        </div>
-    </nav>
+<body class="flex flex-col h-screen bg-base-100">
 
-    <div class="chat-messages" id="chat-messages">
-        <!-- Welcome message -->
-        <div class="message message-assistant">
-            <div class="message-bubble">
+<!-- Navbar -->
+<div class="flex items-center justify-between px-6 border-b border-base-200 bg-base-100 shrink-0" style="height:56px;">
+    <a href="/bots" class="font-bold text-base">Atome Bot Platform</a>
+    <div class="flex items-center gap-5 text-sm text-base-content/60">
+        <span class="font-medium text-base-content">{{ bot.name }}</span>
+        <a href="/bots" class="hover:text-primary transition-colors">All Bots</a>
+        {% if user %}
+        <a href="/dashboard" class="hover:text-primary transition-colors">Dashboard</a>
+        <form method="post" action="/auth/logout" style="display:inline">
+            <button type="submit" class="hover:text-error transition-colors cursor-pointer bg-transparent border-none text-sm">Logout</button>
+        </form>
+        {% else %}
+        <a href="/auth/login" class="hover:text-primary transition-colors">Login</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Messages -->
+<div class="flex-1 overflow-y-auto" id="chat-scroll">
+    <div class="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-2" id="messages-inner">
+
+        <!-- Welcome -->
+        <div class="chat chat-start">
+            <div class="chat-bubble text-sm !bg-gray-100 !text-gray-900">
                 Hi! I'm the {{ bot.name }} support assistant. How can I help you today?
             </div>
         </div>
 
         {% for msg in messages %}
-        <div class="message message-{{ msg.role }}">
-            <div class="message-bubble">{{ msg.content }}</div>
-            {% if msg.role == "assistant" %}
-            <div class="message-actions">
-                <button class="btn btn-link" style="font-size:0.75rem; color:var(--text-muted);"
-                    onclick="openReportModal('{{ msg.content | replace("'", "\\'") | replace('\n', '\\n') }}')">
+        {% if msg.role == "user" %}
+        <div class="chat chat-end">
+            <div class="chat-bubble text-sm !text-white" style="background:var(--primary)">{{ msg.content }}</div>
+        </div>
+        {% else %}
+        <div class="chat chat-start">
+            <div class="chat-bubble text-sm leading-relaxed !bg-gray-100 !text-gray-900">{{ render_markdown(msg.content) }}</div>
+            <div class="chat-footer mt-1">
+                <button class="text-xs text-base-content/30 hover:text-base-content/60 transition-colors cursor-pointer bg-transparent border-none"
+                    onclick="openReportModal('{{ msg.content | replace("'", "\\'") | replace('\n', ' ') }}')">
                     Report mistake
                 </button>
             </div>
-            {% endif %}
         </div>
+        {% endif %}
         {% endfor %}
-    </div>
 
-    <div class="chat-input-area">
-        <form hx-post="/chat/{{ bot.slug }}/send"
-              hx-target="#chat-messages"
+    </div>
+</div>
+
+<!-- Input -->
+<div class="shrink-0 bg-base-100 border-t border-base-200 px-4 py-3">
+    <div class="max-w-2xl mx-auto">
+        <form id="chat-form"
+              hx-post="/chat/{{ bot.slug }}/send"
+              hx-target="#messages-inner"
               hx-swap="beforeend"
-              hx-on::after-request="this.reset(); scrollToBottom();"
-              hx-indicator="#typing">
-            <div class="chat-input-row">
-                <textarea name="message" placeholder="Type a message..." required
-                    onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); this.form.requestSubmit(); }"></textarea>
-                <button type="submit" class="btn btn-primary">Send</button>
+              hx-on::after-request="this.reset(); resetTextarea(this); scrollToBottom();">
+            <div class="relative bg-base-200 rounded-2xl">
+                <textarea name="message" rows="1" placeholder="Message..."
+                    required
+                    class="w-full bg-transparent rounded-2xl px-4 py-3 pr-14 resize-none border-none outline-none text-sm leading-relaxed overflow-y-hidden"
+                    style="min-height:48px; max-height:180px;"
+                    oninput="autoResize(this)"
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit();}"></textarea>
+                <button type="submit" aria-label="Send"
+                    class="btn btn-circle btn-sm absolute right-2 bottom-2 text-white border-none" style="background:var(--primary)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+                    </svg>
+                </button>
             </div>
         </form>
-        <div id="typing" class="htmx-indicator text-muted mt-1" style="font-size:0.8rem;">
-            Assistant is typing...
-        </div>
     </div>
 </div>
 
 <!-- Report Mistake Modal -->
-<div id="report-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center;">
-    <div class="card" style="width:100%; max-width:480px; margin:1rem;">
-        <h3 style="margin-bottom:1rem;">Report a Mistake</h3>
-        <div id="report-result"></div>
-        <form hx-post="/chat/{{ bot.slug }}/report"
-              hx-target="#report-result"
-              hx-swap="innerHTML"
-              hx-on::after-request="setTimeout(closeReportModal, 2000);">
-            <input type="hidden" name="session_id" value="{{ session_id }}">
-            <input type="hidden" name="customer_message" id="report-customer-msg">
-            <input type="hidden" name="bot_response" id="report-bot-response">
-            <div class="form-group">
-                <label>What was wrong with this response?</label>
-                <textarea name="complaint" placeholder="Describe the issue..." required></textarea>
-            </div>
-            <div class="flex gap-1">
-                <button type="submit" class="btn btn-primary">Submit Report</button>
-                <button type="button" class="btn btn-secondary" onclick="closeReportModal()">Cancel</button>
-            </div>
-        </form>
+<div id="report-modal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center">
+    <div class="card bg-base-100 shadow-xl w-full max-w-md mx-4">
+        <div class="card-body">
+            <h3 class="card-title text-base">Report a Mistake</h3>
+            <div id="report-result"></div>
+            <form hx-post="/chat/{{ bot.slug }}/report"
+                  hx-target="#report-result"
+                  hx-swap="innerHTML"
+                  hx-on::after-request="setTimeout(closeReportModal, 2000);">
+                <input type="hidden" name="session_id" value="{{ session_id }}">
+                <input type="hidden" name="customer_message" id="report-customer-msg">
+                <input type="hidden" name="bot_response" id="report-bot-response">
+                <div class="form-control mb-3">
+                    <label class="label text-sm">What was wrong with this response?</label>
+                    <textarea name="complaint" class="textarea textarea-bordered resize-none" placeholder="Describe the issue..." required></textarea>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">Submit</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="closeReportModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <script>
 function scrollToBottom() {
-    const el = document.getElementById('chat-messages');
+    const el = document.getElementById('chat-scroll');
     el.scrollTop = el.scrollHeight;
 }
 scrollToBottom();
 
-// Track the last user message for reporting
+function autoResize(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 180) + 'px';
+}
+
+function resetTextarea(form) {
+    const ta = form.querySelector('textarea');
+    if (ta) ta.style.height = '';
+}
+
+function escapeHtml(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 let lastUserMessage = '';
-document.body.addEventListener('htmx:afterRequest', function(e) {
-    if (e.detail.elt.closest('form[hx-post*="/send"]')) {
-        const ta = e.detail.elt.querySelector('textarea[name=message]');
-        if (ta) lastUserMessage = ta.value || lastUserMessage;
-        scrollToBottom();
+
+document.body.addEventListener('htmx:beforeRequest', function(e) {
+    if (e.detail.elt.id !== 'chat-form') return;
+    const ta = e.detail.elt.querySelector('textarea[name=message]');
+    const msg = (ta && ta.value.trim()) || '';
+    if (!msg) return;
+    lastUserMessage = msg;
+
+    const inner = document.getElementById('messages-inner');
+
+    const userDiv = document.createElement('div');
+    userDiv.className = 'chat chat-end';
+    userDiv.innerHTML = '<div class="chat-bubble text-sm text-white" style="background:var(--primary)">' + escapeHtml(msg).replace(/\n/g,'<br>') + '</div>';
+    inner.appendChild(userDiv);
+
+    const typingDiv = document.createElement('div');
+    typingDiv.id = 'typing-indicator';
+    typingDiv.className = 'chat chat-start';
+    typingDiv.innerHTML = '<div class="chat-bubble !bg-gray-100"><span class="loading loading-dots loading-sm !text-gray-500"></span></div>';
+    inner.appendChild(typingDiv);
+
+    scrollToBottom();
+});
+
+document.body.addEventListener('htmx:beforeSwap', function(e) {
+    if (e.detail.target && e.detail.target.id === 'messages-inner') {
+        const ti = document.getElementById('typing-indicator');
+        if (ti) ti.remove();
     }
 });
 
 function openReportModal(botResponse) {
     document.getElementById('report-customer-msg').value = lastUserMessage;
     document.getElementById('report-bot-response').value = botResponse;
-    const modal = document.getElementById('report-modal');
-    modal.style.display = 'flex';
+    const m = document.getElementById('report-modal');
+    m.classList.remove('hidden');
+    m.classList.add('flex');
 }
 
 function closeReportModal() {
-    document.getElementById('report-modal').style.display = 'none';
+    const m = document.getElementById('report-modal');
+    m.classList.add('hidden');
+    m.classList.remove('flex');
     document.getElementById('report-result').innerHTML = '';
 }
 </script>

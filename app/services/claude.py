@@ -79,7 +79,7 @@ async def chat(
 
     while True:
         response = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-haiku-4-5-20251001",
             max_tokens=1024,
             system=system,
             tools=TOOLS,
@@ -135,7 +135,7 @@ CUSTOMER COMPLAINT:
 Respond with ONLY the updated guidelines text (the full new guidelines, not just the diff). Keep it concise."""
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-haiku-4-5-20251001",
         max_tokens=512,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -160,7 +160,7 @@ Respond with a JSON object with these fields:
 Respond ONLY with valid JSON."""
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
+        model="claude-haiku-4-5-20251001",
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )

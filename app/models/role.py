@@ -11,6 +11,7 @@ class Permission(IntFlag):
     REVIEW_MISTAKES = 1 << 3   # 8
     APPROVE_FIXES   = 1 << 4   # 16
     MANAGE_ROLES    = 1 << 5   # 32
+    DELETE_BOT      = 1 << 6   # 64
 
     @classmethod
     def all(cls) -> int:

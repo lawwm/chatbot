@@ -8,6 +8,7 @@ from app.database import get_db
 from app.services.claude import chat as claude_chat
 from app.services.kb_scraper import get_kb_content
 from app.services.sessions import get_current_user
+from app.utils import render_markdown
 
 router = APIRouter(tags=["chat"])
 templates = Jinja2Templates(directory="app/templates")
@@ -36,6 +37,7 @@ async def chat_page(request: Request, bot_slug: str):
         "messages": messages,
         "session_id": session_id,
         "user": user,
+        "render_markdown": render_markdown,
     })
     response.set_cookie("chat_session_id", session_id, httponly=True, samesite="lax")
     return response
@@ -76,12 +78,13 @@ async def send_message(request: Request, bot_slug: str, message: str = Form(...)
         upsert=True,
     )
 
-    # Return just the two new message bubbles (HTMX partial)
+    # Return just the assistant bubble (HTMX partial)
     return templates.TemplateResponse("chat/messages_partial.html", {
         "request": request,
         "bot_id": bot["_id"],
         "session_id": session_id,
         "user_message": user_msg,
+        "render_markdown": render_markdown,
         "assistant_message": assistant_msg,
     })
 

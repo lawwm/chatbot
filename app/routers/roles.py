@@ -11,6 +11,7 @@ from app.models.role import Permission
 
 router = APIRouter(prefix="/dashboard/bots/{bot_id}/roles", tags=["roles"])
 templates = Jinja2Templates(directory="app/templates")
+templates.env.filters["bitwise_and"] = lambda a, b: int(a) & int(b)
 
 
 @router.get("", response_class=HTMLResponse)

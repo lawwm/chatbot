@@ -50,10 +50,20 @@ async def settings_page(request: Request, bot_id: str, user: dict = Depends(requ
             "article_count": len(kb.get("articles", [])),
             "scraped_at": kb.get("scraped_at"),
         }
+
+    from app.models.role import Permission as Perm
+    user_id = str(user["_id"])
+    can_delete = (
+        is_creator
+        or bot.get("created_by") == user_id
+        or bool(bitmap & Perm.DELETE_BOT)
+    )
+
     return templates.TemplateResponse("dashboard/bot_settings.html", {
         "request": request, "user": user, "bot": bot, "permissions": permissions,
         "scraping": scrape_progress.is_active(bot_id),
         "kb_stats": kb_stats,
+        "can_delete": can_delete,
     })
 
 
@@ -61,9 +71,16 @@ async def settings_page(request: Request, bot_id: str, user: dict = Depends(requ
 async def update_settings(
     request: Request,
     bot_id: str,
+    name: str = Form(None),
     kb_url: str = Form(None),
     additional_guidelines: str = Form(None),
     auto_fix_enabled: str = Form(None),
+    scraper_max_articles: int = Form(None),
+    scraper_depth: int = Form(None),
+    scraper_strategy: str = Form(None),
+    scraper_delay_ms: int = Form(None),
+    scraper_timeout_s: int = Form(None),
+    scraper_max_chars: int = Form(None),
     user: dict = Depends(require_auth),
 ):
     db = get_db()
@@ -73,6 +90,19 @@ async def update_settings(
 
     updates = {"updated_at": datetime.utcnow()}
     trigger_scrape = False
+
+    if name is not None and is_creator:
+        updates["name"] = name
+
+    if scraper_max_articles is not None and is_creator:
+        updates["scraper_settings"] = {
+            "max_articles": scraper_max_articles,
+            "depth": scraper_depth,
+            "strategy": scraper_strategy,
+            "delay_ms": scraper_delay_ms,
+            "timeout_s": scraper_timeout_s,
+            "max_chars_per_article": scraper_max_chars,
+        }
 
     if kb_url is not None and (is_creator or bitmap & Permission.EDIT_KB_URL):
         updates["kb_url"] = kb_url

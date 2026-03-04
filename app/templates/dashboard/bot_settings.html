@@ -12,6 +12,12 @@
         <a href="/dashboard/bots/{{ bot._id }}/roles" class="btn btn-secondary">Roles</a>
         <a href="/chat/{{ bot.slug }}" class="btn btn-secondary" target="_blank">Open Chat</a>
         <a href="/dashboard" class="btn btn-secondary">Back</a>
+        {% if can_delete %}
+        <form method="post" action="/dashboard/bots/{{ bot._id }}/delete"
+              onsubmit="return confirm('Delete {{ bot.name }}? This cannot be undone.')">
+            <button type="submit" class="btn btn-danger">Delete Bot</button>
+        </form>
+        {% endif %}
     </div>
 </div>
 
@@ -21,6 +27,11 @@
 
 <div class="card" style="max-width: 700px;">
     <form method="post" action="/dashboard/bots/{{ bot._id }}/settings">
+        <div class="form-group">
+            <label for="name">Bot Name</label>
+            <input type="text" id="name" name="name" value="{{ bot.name }}" required>
+        </div>
+
         <div class="form-group">
             <label for="kb_url">Knowledge Base URL</label>
             <input type="url" id="kb_url" name="kb_url" value="{{ bot.kb_url }}"
@@ -45,6 +56,40 @@
             </label>
             <p class="text-muted mt-1">When enabled, approved fixes are applied automatically without manual review.</p>
         </div>
+
+        <details class="scraper-settings" style="margin-bottom:1rem;">
+            <summary>Scraper Settings</summary>
+            <div class="scraper-settings-body">
+                {% set s = bot.scraper_settings or {} %}
+                <div class="form-group">
+                    <label for="scraper_max_articles">Max Articles</label>
+                    <input type="number" id="scraper_max_articles" name="scraper_max_articles" value="{{ s.get('max_articles', 30) }}" min="1" max="200">
+                </div>
+                <div class="form-group">
+                    <label for="scraper_depth">Crawl Depth</label>
+                    <input type="number" id="scraper_depth" name="scraper_depth" value="{{ s.get('depth', 1) }}" min="1" max="5">
+                </div>
+                <div class="form-group">
+                    <label for="scraper_strategy">Traversal Strategy</label>
+                    <select id="scraper_strategy" name="scraper_strategy">
+                        <option value="bfs" {% if s.get('strategy', 'bfs') == 'bfs' %}selected{% endif %}>BFS — broad coverage (recommended)</option>
+                        <option value="dfs" {% if s.get('strategy') == 'dfs' %}selected{% endif %}>DFS — follow topics deeply</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="scraper_delay_ms">Request Delay (ms)</label>
+                    <input type="number" id="scraper_delay_ms" name="scraper_delay_ms" value="{{ s.get('delay_ms', 500) }}" min="0" max="5000">
+                </div>
+                <div class="form-group">
+                    <label for="scraper_timeout_s">Request Timeout (s)</label>
+                    <input type="number" id="scraper_timeout_s" name="scraper_timeout_s" value="{{ s.get('timeout_s', 20) }}" min="5" max="60">
+                </div>
+                <div class="form-group">
+                    <label for="scraper_max_chars">Max Characters per Article</label>
+                    <input type="number" id="scraper_max_chars" name="scraper_max_chars" value="{{ s.get('max_chars_per_article', 3000) }}" min="500" max="20000">
+                </div>
+            </div>
+        </details>
 
         <button type="submit" class="btn btn-primary"
             {% if not permissions.edit_kb_url and not permissions.edit_guidelines and not permissions.toggle_autofix %}
