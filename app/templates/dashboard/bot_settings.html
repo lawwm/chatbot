@@ -1,25 +1,38 @@
 {% extends "base.html" %}
 {% block title %}{{ bot.name }} — Settings{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css">
+{% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+{% if request.query_params.get('scraping') or scraping %}
+<div id="scraping-banner" class="alert" style="background:var(--warning); color:#fff; margin-bottom:1rem; font-weight:500;">
+    ⏳ Do not leave this page — bot is creating its knowledge base…
+</div>
+{% endif %}
+
 <div class="page-header">
     <div>
         <h1>{{ bot.name }}</h1>
         <p class="text-muted">Settings</p>
     </div>
-    <div class="flex gap-1">
-        <a href="/dashboard/bots/{{ bot._id }}/mistakes" class="btn btn-secondary">Mistakes</a>
-        <a href="/dashboard/bots/{{ bot._id }}/roles" class="btn btn-secondary">Roles</a>
-        <a href="/chat/{{ bot.slug }}" class="btn btn-secondary" target="_blank">Open Chat</a>
-        <a href="/dashboard" class="btn btn-secondary">Back</a>
+    <div class="flex gap-1" id="page-actions">
+        {% set scraping_now = request.query_params.get('scraping') or scraping %}
+        <a href="/dashboard/bots/{{ bot._id }}/mistakes" class="btn btn-secondary{% if scraping_now %} disabled{% endif %}" {% if scraping_now %}aria-disabled="true" onclick="return false"{% endif %}>Mistakes</a>
+        <a href="/dashboard/bots/{{ bot._id }}/roles" class="btn btn-secondary{% if scraping_now %} disabled{% endif %}" {% if scraping_now %}aria-disabled="true" onclick="return false"{% endif %}>Roles</a>
+        <a href="/chat/{{ bot.slug }}" class="btn btn-secondary{% if scraping_now %} disabled{% endif %}" {% if scraping_now %}aria-disabled="true" onclick="return false"{% endif %} target="_blank">Open Chat</a>
+        <a href="/dashboard" class="btn btn-secondary{% if scraping_now %} disabled{% endif %}" {% if scraping_now %}aria-disabled="true" onclick="return false"{% endif %}>Back</a>
         {% if can_delete %}
-        <form method="post" action="/dashboard/bots/{{ bot._id }}/delete"
-              onsubmit="return confirm('Delete {{ bot.name }}? This cannot be undone.')">
-            <button type="submit" class="btn btn-danger">Delete Bot</button>
-        </form>
+        <button type="submit" form="delete-form" id="delete-btn" class="btn btn-danger" {% if scraping_now %}disabled{% endif %}
+            onclick="return confirm('Delete {{ bot.name }}? This cannot be undone.')">Delete Bot</button>
         {% endif %}
     </div>
 </div>
+
+{% if can_delete %}
+<form id="delete-form" method="post" action="/dashboard/bots/{{ bot._id }}/delete"></form>
+{% endif %}
 
 {% if request.query_params.get('saved') %}
 <div class="alert alert-success">Settings saved.</div>
@@ -54,7 +67,17 @@
                     {% if not permissions.toggle_autofix %}disabled{% endif %}>
                 Enable Auto-Fix
             </label>
-            <p class="text-muted mt-1">When enabled, approved fixes are applied automatically without manual review.</p>
+            <p class="text-muted mt-1">When enabled, reported mistakes are analyzed and applied to guidelines automatically.</p>
+        </div>
+
+        <div class="form-group">
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:fit-content; white-space:nowrap;">
+                <input type="checkbox" name="allow_override"
+                    {% if bot.allow_override %}checked{% endif %}
+                    {% if not permissions.toggle_autofix %}disabled{% endif %}>
+                Allow Override on Conflict
+            </label>
+            <p class="text-muted mt-1">When auto-fix detects a conflict with existing guidelines, the fix wins automatically. If unchecked, conflicts require manual review.</p>
         </div>
 
         <details class="scraper-settings" style="margin-bottom:1rem;">
@@ -91,49 +114,61 @@
             </div>
         </details>
 
-        <button type="submit" class="btn btn-primary"
-            {% if not permissions.edit_kb_url and not permissions.edit_guidelines and not permissions.toggle_autofix %}
+        <button type="submit" id="save-btn" class="btn btn-primary"
+            {% if (not permissions.edit_kb_url and not permissions.edit_guidelines and not permissions.toggle_autofix) or (request.query_params.get('scraping') or scraping) %}
             disabled{% endif %}>
             Save Settings
         </button>
     </form>
 </div>
 
-<div class="kb-panel" id="kb-status">
-    <div class="kb-panel-left">
-        <span class="kb-panel-label">Knowledge Base</span>
+<div id="kb-status" data-theme="light" style="max-width:700px; margin-top:0.75rem; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; font-family:inherit;">
+    <!-- Header row -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1rem; background:var(--surface); border-bottom:1px solid var(--border);">
+        <div>
+            <div style="font-size:0.7rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-muted);">Knowledge Base</div>
+            <div style="font-size:0.95rem; font-weight:600; margin-top:0.15rem;" id="kb-count-text">
+                {% if request.query_params.get('scraping') or scraping %}Scraping…
+                {% elif kb_stats %}{{ kb_stats.article_count }} article{{ 's' if kb_stats.article_count != 1 }}
+                {% else %}Not scraped yet{% endif %}
+            </div>
+        </div>
         {% if request.query_params.get('scraping') or scraping %}
-        <span class="kb-panel-count" id="kb-count-text">Scraping…</span>
+        <span class="badge badge-warning" id="kb-badge" style="gap:0.4rem; font-family:inherit;">
+            <span class="loading loading-spinner loading-xs"></span>Live
+        </span>
         {% elif kb_stats %}
-        <span class="kb-panel-count">{{ kb_stats.article_count }} article{{ 's' if kb_stats.article_count != 1 }}</span>
+        <span class="badge badge-success" id="kb-badge" style="font-family:inherit;">Done</span>
         {% else %}
-        <span class="kb-panel-count kb-panel-empty">Not scraped</span>
+        <span class="badge badge-ghost" id="kb-badge" style="font-family:inherit;">Pending</span>
         {% endif %}
     </div>
-    <div class="kb-panel-right">
-        {% if request.query_params.get('scraping') or scraping %}
-        <span class="kb-indicator kb-indicator-visiting" id="kb-indicator"></span>
-        <span class="kb-panel-url" id="kb-latest-url">connecting…</span>
-        {% elif kb_stats and kb_stats.scraped_at %}
-        <span class="kb-indicator kb-indicator-done"></span>
-        <span class="kb-panel-url">Last scraped {{ kb_stats.scraped_at.strftime('%b %d, %Y at %H:%M') }}</span>
-        {% else %}
-        <span class="kb-indicator kb-indicator-none"></span>
-        <span class="kb-panel-url">Save settings to trigger a scrape</span>
-        {% endif %}
+    <!-- Body -->
+    {% if request.query_params.get('scraping') or scraping %}
+    <div class="mockup-code" id="scrape-log" style="border-radius:0; margin:0; font-size:0.75rem; max-height:240px; overflow-y:auto;">
+        <pre data-prefix=">"><code style="opacity:0.35;">connecting…</code></pre>
     </div>
+    {% elif kb_stats and kb_stats.scraped_at %}
+    <div id="kb-meta" style="padding:0.65rem 1rem; font-size:0.8rem; color:var(--text-muted); background:var(--surface);">
+        Last scraped {{ kb_stats.scraped_at.strftime('%b %d, %Y at %H:%M') }}
+    </div>
+    {% else %}
+    <div id="kb-meta" style="padding:0.65rem 1rem; font-size:0.8rem; color:var(--text-muted); background:var(--surface);">
+        Save settings to trigger a scrape.
+    </div>
+    {% endif %}
 </div>
 
 {% if request.query_params.get('scraping') or scraping %}
 <script>
 (function () {
     let scraped = 0, visited = 0;
-    const countText  = document.getElementById('kb-count-text');
-    const indicator  = document.getElementById('kb-indicator');
-    const latestUrl  = document.getElementById('kb-latest-url');
+    const countText = document.getElementById('kb-count-text');
+    const badge     = document.getElementById('kb-badge');
+    const log       = document.getElementById('scrape-log');
 
-    const indicatorClass = { visiting: 'kb-indicator-visiting', scraped: 'kb-indicator-done', failed: 'kb-indicator-failed' };
-    const urlColor       = { visiting: 'var(--scrape-yellow)', scraped: 'var(--scrape-green)', failed: 'var(--scrape-red)' };
+    const COLORS = { visiting: '#facc15', scraped: '#4ade80', failed: '#f87171' };
+    const ICONS  = { visiting: '→', scraped: '✓', failed: '✗' };
 
     const es = new EventSource('/dashboard/bots/{{ bot._id }}/scrape-stream');
 
@@ -142,11 +177,29 @@
 
         if (data.startsWith('__done__')) {
             es.close();
-            const count = data.replace('__done__', '') || scraped;
-            countText.textContent = `${count} article${count != 1 ? 's' : ''}`;
-            indicator.className = `kb-indicator ${scraped > 0 ? 'kb-indicator-done' : 'kb-indicator-failed'}`;
-            latestUrl.textContent = `Scraped just now`;
-            latestUrl.style.color = '';
+            const count = parseInt(data.replace('__done__', '')) || scraped;
+            countText.textContent = `${count} article${count !== 1 ? 's' : ''}`;
+
+            badge.className = 'badge badge-success';
+            badge.style.fontFamily = 'inherit';
+            badge.textContent = 'Done';
+
+            const meta = document.createElement('div');
+            meta.style.cssText = 'padding:0.65rem 1rem; font-size:0.8rem; color:var(--text-muted); background:var(--surface);';
+            meta.textContent = 'Scraped just now';
+            log.replaceWith(meta);
+
+            const banner = document.getElementById('scraping-banner');
+            if (banner) banner.remove();
+
+            document.querySelectorAll('#page-actions .btn').forEach(el => {
+                el.removeAttribute('disabled');
+                el.classList.remove('disabled');
+                el.removeAttribute('aria-disabled');
+                el.onclick = null;
+            });
+            const saveBtn = document.getElementById('save-btn');
+            if (saveBtn) saveBtn.removeAttribute('disabled');
             return;
         }
 
@@ -158,16 +211,23 @@
         visited++;
 
         countText.textContent = `${scraped} scraped · ${visited} visited`;
-        indicator.className = `kb-indicator ${indicatorClass[statusType] || ''}`;
-        latestUrl.textContent = url.replace(/^https?:\/\/[^/]+/, '');
-        latestUrl.style.color = urlColor[statusType] || '';
+
+        const pre = document.createElement('pre');
+        pre.setAttribute('data-prefix', ICONS[statusType] || '>');
+        const code = document.createElement('code');
+        code.style.color = COLORS[statusType] || '#94a3b8';
+        code.textContent = url.replace(/^https?:\/\/[^/]+/, '') || url;
+        pre.appendChild(code);
+        log.appendChild(pre);
+        log.scrollTop = log.scrollHeight;
     };
 
     es.onerror = function () {
         es.close();
         countText.textContent = 'Connection lost';
-        indicator.className = 'kb-indicator kb-indicator-failed';
-        latestUrl.textContent = '';
+        badge.className = 'badge badge-error';
+        badge.style.fontFamily = 'inherit';
+        badge.textContent = 'Error';
     };
 })();
 </script>

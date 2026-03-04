@@ -37,7 +37,15 @@
                 <input type="checkbox" name="auto_fix_enabled">
                 Enable Auto-Fix
             </label>
-            <p class="text-muted mt-1">When enabled, approved fixes are applied automatically without manual review.</p>
+            <p class="text-muted mt-1">When enabled, reported mistakes are analyzed and applied to guidelines automatically.</p>
+        </div>
+
+        <div class="form-group">
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:fit-content; white-space:nowrap;">
+                <input type="checkbox" name="allow_override">
+                Allow Override on Conflict
+            </label>
+            <p class="text-muted mt-1">When auto-fix detects a conflict with existing guidelines, the fix wins automatically. If unchecked, conflicts require manual review.</p>
         </div>
 
         <details class="scraper-settings" style="margin-bottom:1rem;">

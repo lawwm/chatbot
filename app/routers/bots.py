@@ -64,6 +64,7 @@ async def create_bot(
     kb_url: str = Form("https://help.atome.ph/hc/en-gb/categories/4439682039065-Atome-Card"),
     additional_guidelines: str = Form(""),
     auto_fix_enabled: str = Form(None),
+    allow_override: str = Form(None),
     scraper_max_articles: int = Form(30),
     scraper_depth: int = Form(1),
     scraper_strategy: str = Form("bfs"),
@@ -97,12 +98,30 @@ async def create_bot(
         "scraper_settings": scraper_settings,
         "additional_guidelines": additional_guidelines,
         "auto_fix_enabled": auto_fix_enabled == "on",
+        "allow_override": allow_override == "on",
         "system_prompt": "",
         "created_by": str(user["_id"]),
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
     })
     bot_id = str(result.inserted_id)
+
+    # Create all-permissions role and assign to creator
+    from app.models.role import Permission
+    role_result = await db.roles.insert_one({
+        "name": f"all-perms-{name}",
+        "bot_id": bot_id,
+        "permission_bitmap": Permission.all(),
+        "created_by": str(user["_id"]),
+        "created_at": datetime.utcnow(),
+    })
+    await db.user_roles.insert_one({
+        "user_id": str(user["_id"]),
+        "role_id": str(role_result.inserted_id),
+        "bot_id": bot_id,
+        "granted_by": str(user["_id"]),
+        "created_at": datetime.utcnow(),
+    })
 
     from app.services import scrape_progress
     from app.services.kb_scraper import scrape_and_store

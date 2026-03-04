@@ -7,7 +7,14 @@
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>:root { --primary: #2563eb; --primary-dark: #1d4ed8; }</style>
+    <style>
+        :root { --primary: #2563eb; --primary-dark: #1d4ed8; }
+        [data-theme="light"] {
+            --p: oklch(48.76% 0.2429 264.39);
+            --pf: oklch(42% 0.22 264);
+            --pc: oklch(100% 0 0);
+        }
+    </style>
 </head>
 <body class="flex flex-col h-screen bg-base-100">
 
@@ -141,6 +148,9 @@ document.body.addEventListener('htmx:beforeRequest', function(e) {
     const msg = (ta && ta.value.trim()) || '';
     if (!msg) return;
     lastUserMessage = msg;
+
+    ta.value = '';
+    ta.style.height = '';
 
     const inner = document.getElementById('messages-inner');
 

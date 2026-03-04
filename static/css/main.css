@@ -50,6 +50,7 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .btn-primary:hover { background: var(--primary-dark); }
 .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
 .btn-secondary:hover { background: var(--bg); }
+.btn.disabled, .btn:disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
 .btn-danger { background: var(--danger); color: white; }
 .btn-full { width: 100%; justify-content: center; }
 .btn-link { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; padding: 0; }
@@ -109,6 +110,10 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .chat-send-btn svg { pointer-events: none; }
 .chat-send-btn svg { pointer-events: none; }
 
+/* Markdown rendered in chat bubbles */
+.md-heading { display: block; margin-top: 0.6em; margin-bottom: 0.1em; font-size: 0.95em; }
+.md-heading:first-child { margin-top: 0; }
+
 /* Misc */
 .text-muted { color: var(--text-muted); font-size: 0.875rem; }
 .mt-1 { margin-top: 0.5rem; }
@@ -165,4 +170,8 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 
 /* HTMX loading indicator */
 .htmx-indicator { display: none; }
-.htmx-request .htmx-indicator { display: inline; }
+.htmx-request .htmx-indicator { display: inline-block; }
+
+/* Spinner */
+.spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }

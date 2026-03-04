@@ -1,0 +1,17 @@
+{% if not archived %}
+<p class="text-muted">No archived fixes yet.</p>
+{% else %}
+<table class="table">
+    <thead><tr><th>Customer Message</th><th>Complaint</th><th>Fix Applied</th><th>Fixed At</th></tr></thead>
+    <tbody id="archive-tbody">
+    {% for m in archived %}
+    <tr>
+        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ m.customer_message }}</td>
+        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ m.complaint }}</td>
+        <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ m.fix_applied }}</td>
+        <td style="white-space:nowrap;">{{ m.fixed_at.strftime('%Y-%m-%d %H:%M') if m.fixed_at else '' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}

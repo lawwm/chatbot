@@ -1,0 +1,34 @@
+<div style="border:2px solid var(--warning); border-radius:var(--radius); padding:1rem; background:#fffbf0;">
+    <p style="color:var(--warning); font-weight:600; margin-bottom:0.5rem;">⚠️ Conflict Detected</p>
+    <p style="font-size:0.875rem; margin-bottom:1rem; color:var(--text);">{{ conflict_description }}</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+        <div>
+            <p style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-bottom:0.5rem;">KEEP EXISTING</p>
+            <pre style="font-size:0.8rem; background:var(--bg); padding:0.75rem; border-radius:var(--radius); white-space:pre-wrap; overflow:auto; max-height:180px;">{{ keep_version }}</pre>
+            <form hx-post="/dashboard/bots/{{ bot_id }}/mistakes/{{ mistake_id }}/apply"
+                  hx-target="#mistake-{{ mistake_id }}"
+                  hx-swap="outerHTML"
+                  hx-indicator="#apply-spinner-{{ mistake_id }}">
+                <input type="hidden" name="fix" value="{{ keep_version }}">
+                <button type="submit" class="btn btn-secondary" style="margin-top:0.5rem;">
+                    Use Existing
+                </button>
+                <span id="apply-spinner-{{ mistake_id }}" class="htmx-indicator spinner" style="margin-left:0.5rem;"></span>
+            </form>
+        </div>
+        <div>
+            <p style="font-size:0.75rem; font-weight:600; color:var(--warning); margin-bottom:0.5rem;">APPLY FIX (overrides conflict)</p>
+            <pre style="font-size:0.8rem; background:var(--bg); padding:0.75rem; border-radius:var(--radius); white-space:pre-wrap; overflow:auto; max-height:180px;">{{ override_version }}</pre>
+            <form hx-post="/dashboard/bots/{{ bot_id }}/mistakes/{{ mistake_id }}/apply"
+                  hx-target="#mistake-{{ mistake_id }}"
+                  hx-swap="outerHTML"
+                  hx-indicator="#apply-spinner2-{{ mistake_id }}">
+                <input type="hidden" name="fix" value="{{ override_version }}">
+                <button type="submit" class="btn btn-primary" style="margin-top:0.5rem;">
+                    Apply Fix
+                </button>
+                <span id="apply-spinner2-{{ mistake_id }}" class="htmx-indicator spinner" style="margin-left:0.5rem;"></span>
+            </form>
+        </div>
+    </div>
+</div>

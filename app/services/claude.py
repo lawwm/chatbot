@@ -54,6 +54,8 @@ INSTRUCTIONS:
 """
     if additional_guidelines.strip():
         prompt += f"\nADDITIONAL GUIDELINES:\n{additional_guidelines}\n"
+
+    print(prompt)
     return prompt
 
 
@@ -140,6 +142,44 @@ Respond with ONLY the updated guidelines text (the full new guidelines, not just
         messages=[{"role": "user", "content": prompt}],
     )
     return response.content[0].text
+
+
+async def merge_guidelines(existing: str, fix: str) -> dict:
+    """Detect conflicts between a fix and existing guidelines, return merge options."""
+    if not existing or not existing.strip():
+        return {"has_conflict": False, "merged": fix, "conflict_description": "",
+                "override_version": fix, "keep_version": ""}
+
+    prompt = f"""You are merging a bot behavior fix into existing guidelines.
+
+EXISTING GUIDELINES:
+{existing}
+
+FIX TO INTEGRATE:
+{fix}
+
+Determine if the fix CONFLICTS with any part of the existing guidelines (directly contradicts or overrides it).
+
+Respond ONLY with valid JSON:
+{{
+  "has_conflict": true or false,
+  "conflict_description": "brief description of the conflict (empty string if none)",
+  "merged": "full guidelines with fix cleanly integrated (when no conflict)",
+  "override_version": "full guidelines where fix takes precedence over the conflicting part",
+  "keep_version": "full guidelines keeping the existing instruction, fix is discarded"
+}}"""
+
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    text = response.content[0].text.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    return json.loads(text)
 
 
 async def generate_bot_config(doc_content: str, manager_instructions: str) -> dict:

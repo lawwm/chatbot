@@ -75,6 +75,7 @@ async def update_settings(
     kb_url: str = Form(None),
     additional_guidelines: str = Form(None),
     auto_fix_enabled: str = Form(None),
+    allow_override: str = Form(None),
     scraper_max_articles: int = Form(None),
     scraper_depth: int = Form(None),
     scraper_strategy: str = Form(None),
@@ -113,6 +114,7 @@ async def update_settings(
 
     if is_creator or bitmap & Permission.TOGGLE_AUTOFIX:
         updates["auto_fix_enabled"] = auto_fix_enabled == "on"
+        updates["allow_override"] = allow_override == "on"
 
     await db.bots.update_one({"_id": ObjectId(bot_id)}, {"$set": updates})
 
