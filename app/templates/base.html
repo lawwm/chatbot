@@ -10,7 +10,8 @@
 </head>
 <body>
     {% block nav %}
-    <nav class="navbar">
+    <nav class="site-nav">
+      <div class="site-nav-inner">
         <a class="brand" href="/dashboard">Atome Bot Platform</a>
         <div class="nav-links">
             <a href="/dashboard">Bots</a>
@@ -19,12 +20,13 @@
             <a href="/meta">Meta</a>
             {% endif %}
             <form method="post" action="/auth/logout" style="display:inline">
-                <button type="submit" class="btn-link">Logout</button>
+                <button type="submit">Logout</button>
             </form>
             {% else %}
             <a href="/auth/login">Login</a>
             {% endif %}
         </div>
+      </div>
     </nav>
     {% endblock %}
     <main class="container">

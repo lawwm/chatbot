@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ bot.name }} — Chat</title>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <link rel="stylesheet" href="/static/css/main.css">
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -19,21 +20,24 @@
 <body class="flex flex-col h-screen bg-base-100">
 
 <!-- Navbar -->
-<div class="flex items-center justify-between px-6 border-b border-base-200 bg-base-100 shrink-0" style="height:56px;">
-    <a href="/bots" class="font-bold text-base">Atome Bot Platform</a>
-    <div class="flex items-center gap-5 text-sm text-base-content/60">
-        <span class="font-medium text-base-content">{{ bot.name }}</span>
-        <a href="/bots" class="hover:text-primary transition-colors">All Bots</a>
-        {% if user %}
-        <a href="/dashboard" class="hover:text-primary transition-colors">Dashboard</a>
-        <form method="post" action="/auth/logout" style="display:inline">
-            <button type="submit" class="hover:text-error transition-colors cursor-pointer bg-transparent border-none text-sm">Logout</button>
-        </form>
-        {% else %}
-        <a href="/auth/login" class="hover:text-primary transition-colors">Login</a>
-        {% endif %}
+<nav class="site-nav shrink-0">
+    <div class="site-nav-inner">
+        <a class="brand" href="/dashboard">Atome Bot Platform</a>
+        <div class="nav-links">
+            <a href="/dashboard">Bots</a>
+            {% if user %}
+            {% if user.has_creation_role %}
+            <a href="/meta">Meta</a>
+            {% endif %}
+            <form method="post" action="/auth/logout" style="display:inline">
+                <button type="submit">Logout</button>
+            </form>
+            {% else %}
+            <a href="/auth/login">Login</a>
+            {% endif %}
+        </div>
     </div>
-</div>
+</nav>
 
 <!-- Messages -->
 <div class="flex-1 overflow-y-auto" id="chat-scroll">
