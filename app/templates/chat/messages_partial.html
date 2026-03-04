@@ -1,0 +1,15 @@
+<!-- User message -->
+<div class="message message-user">
+    <div class="message-bubble">{{ user_message.content }}</div>
+</div>
+
+<!-- Assistant message -->
+<div class="message message-assistant">
+    <div class="message-bubble">{{ assistant_message.content }}</div>
+    <div class="message-actions">
+        <button class="btn btn-link" style="font-size:0.75rem; color:var(--text-muted);"
+            onclick="openReportModal('{{ assistant_message.content | replace("'", "\\'") | replace('\n', ' ') }}')">
+            Report mistake
+        </button>
+    </div>
+</div>

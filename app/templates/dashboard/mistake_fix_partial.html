@@ -1,0 +1,11 @@
+<form hx-post="/dashboard/bots/{{ bot_id }}/mistakes/{{ mistake_id }}/apply"
+      hx-target="#mistake-{{ mistake_id }}"
+      hx-swap="outerHTML">
+    <div class="form-group">
+        <label style="font-size:0.75rem; font-weight:600; color:var(--success);">SUGGESTED FIX (edit if needed)</label>
+        <textarea name="fix" style="min-height:120px;">{{ suggested_fix }}</textarea>
+    </div>
+    <div class="flex gap-1">
+        <button type="submit" class="btn btn-primary">Apply Fix &amp; Archive</button>
+    </div>
+</form>

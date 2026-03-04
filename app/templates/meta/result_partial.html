@@ -1,0 +1,31 @@
+<div class="card">
+    <div class="alert alert-success">Bot "{{ bot_name }}" created successfully!</div>
+
+    <h3 style="font-size:1rem; margin-bottom:0.75rem;">Generated Configuration</h3>
+
+    {% if config.kb_url %}
+    <div style="margin-bottom:0.75rem;">
+        <p style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">KNOWLEDGE BASE URL</p>
+        <p style="font-size:0.9rem;">{{ config.kb_url }}</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-bottom:0.75rem;">
+        <p style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">GUIDELINES</p>
+        <pre style="background:var(--bg); padding:0.75rem; border-radius:var(--radius); font-size:0.8rem; white-space:pre-wrap;">{{ config.additional_guidelines }}</pre>
+    </div>
+
+    {% if config.suggested_tools %}
+    <div style="margin-bottom:0.75rem;">
+        <p style="font-size:0.75rem; font-weight:600; color:var(--text-muted);">SUGGESTED TOOLS</p>
+        {% for tool in config.suggested_tools %}
+        <span class="badge badge-open">{{ tool }}</span>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="flex gap-1 mt-2">
+        <a href="/dashboard/bots/{{ bot_id }}/settings" class="btn btn-primary">Edit Settings</a>
+        <a href="/chat/{{ bot_slug }}" class="btn btn-secondary" target="_blank">Open Chat</a>
+    </div>
+</div>

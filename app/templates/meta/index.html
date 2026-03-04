@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Meta-Agent — Build a Bot{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Meta-Agent</h1>
+        <p class="text-muted">Describe what you want your bot to do and it will be created automatically.</p>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; align-items:start;">
+    <div class="card">
+        <h2 style="font-size:1.1rem; margin-bottom:1rem;">Create a New Bot</h2>
+        <form hx-post="/meta/generate"
+              hx-target="#meta-result"
+              hx-swap="innerHTML"
+              hx-encoding="multipart/form-data"
+              hx-indicator="#meta-spinner">
+            <div class="form-group">
+                <label>Bot Name</label>
+                <input type="text" name="bot_name" placeholder="e.g. Loan Support Bot" required>
+            </div>
+            <div class="form-group">
+                <label>Upload a Document (optional)</label>
+                <input type="file" name="doc_file" accept=".txt,.md,.csv">
+                <p class="text-muted mt-1">Supported: .txt, .md, .csv. PDF support coming soon.</p>
+            </div>
+            <div class="form-group">
+                <label>Instructions for the Bot</label>
+                <textarea name="manager_instructions" placeholder="Describe what this bot should do, what topics it covers, how it should behave..." required style="min-height:140px;"></textarea>
+            </div>
+            <div class="flex gap-1 items-center">
+                <button type="submit" class="btn btn-primary">Generate Bot</button>
+                <span id="meta-spinner" class="htmx-indicator text-muted" style="font-size:0.85rem;">Generating...</span>
+            </div>
+        </form>
+    </div>
+
+    <div>
+        <div id="meta-result"></div>
+
+        {% if bots %}
+        <div class="card mt-2">
+            <h2 style="font-size:1.1rem; margin-bottom:1rem;">Your Generated Bots</h2>
+            {% for bot in bots %}
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--border);">
+                <div>
+                    <p style="font-weight:500;">{{ bot.name }}</p>
+                    <p class="text-muted" style="font-size:0.8rem;">/chat/{{ bot.slug }}</p>
+                </div>
+                <div class="flex gap-1">
+                    <a href="/dashboard/bots/{{ bot._id }}/settings" class="btn btn-secondary">Edit</a>
+                    <a href="/chat/{{ bot.slug }}" class="btn btn-secondary" target="_blank">Chat</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

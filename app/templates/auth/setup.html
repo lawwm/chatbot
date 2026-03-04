@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Setup — Atome Bot Platform{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:center; padding-top:4rem;">
+    <div class="auth-card">
+        <h1>Atome Bot Platform</h1>
+        <h2>First-time setup</h2>
+        <p class="text-muted">Create the first admin account.</p>
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+        <form method="post" action="/auth/setup">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Create account</button>
+        </form>
+        <p style="margin-top:1rem;text-align:center;">Already have an account? <a href="/auth/login">Sign in</a></p>
+    </div>
+</div>
+{% endblock %}

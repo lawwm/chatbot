@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}New Bot{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Create New Bot</h1>
+    <a href="/dashboard" class="btn btn-secondary">Cancel</a>
+</div>
+<div class="card" style="max-width: 600px;">
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/dashboard/bots/new">
+        <div class="form-group">
+            <label for="name">Bot Name</label>
+            <input type="text" id="name" name="name" placeholder="e.g. Atome Card Support" required autofocus>
+        </div>
+        <div class="form-group">
+            <label for="kb_url">Knowledge Base URL</label>
+            <input type="url" id="kb_url" name="kb_url"
+                value="https://help.atome.ph/hc/en-gb/categories/4439682039065-Atome-Card">
+        </div>
+        <details class="scraper-settings" style="margin-bottom:1rem;">
+            <summary>Scraper Settings</summary>
+            <div class="scraper-settings-body">
+                <div class="form-group">
+                    <label for="scraper_max_articles">Max Articles</label>
+                    <input type="number" id="scraper_max_articles" name="scraper_max_articles" value="30" min="1" max="200">
+                </div>
+                <div class="form-group">
+                    <label for="scraper_depth">Crawl Depth</label>
+                    <input type="number" id="scraper_depth" name="scraper_depth" value="1" min="1" max="5">
+                </div>
+                <div class="form-group">
+                    <label for="scraper_strategy">Traversal Strategy</label>
+                    <select id="scraper_strategy" name="scraper_strategy">
+                        <option value="bfs">BFS — broad coverage (recommended)</option>
+                        <option value="dfs">DFS — follow topics deeply</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="scraper_delay_ms">Request Delay (ms)</label>
+                    <input type="number" id="scraper_delay_ms" name="scraper_delay_ms" value="500" min="0" max="5000">
+                </div>
+                <div class="form-group">
+                    <label for="scraper_timeout_s">Request Timeout (s)</label>
+                    <input type="number" id="scraper_timeout_s" name="scraper_timeout_s" value="20" min="5" max="60">
+                </div>
+                <div class="form-group">
+                    <label for="scraper_max_chars">Max Characters per Article</label>
+                    <input type="number" id="scraper_max_chars" name="scraper_max_chars" value="3000" min="500" max="20000">
+                </div>
+            </div>
+        </details>
+        <button type="submit" class="btn btn-primary">Create Bot</button>
+    </form>
+</div>
+{% endblock %}

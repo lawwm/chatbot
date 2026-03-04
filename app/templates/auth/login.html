@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Login — Atome Bot Platform{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:center; padding-top:4rem;">
+    <div class="auth-card">
+        <h1>Atome Bot Platform</h1>
+        <h2>Sign in</h2>
+        {% if error %}
+        <div class="alert alert-error">{{ error }}</div>
+        {% endif %}
+        <form method="post" action="/auth/login">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Sign in</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

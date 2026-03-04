@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ bot.name }} — Settings{% endblock %}
+{% block content %}
+{% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+<div class="page-header">
+    <div>
+        <h1>{{ bot.name }}</h1>
+        <p class="text-muted">Settings</p>
+    </div>
+    <div class="flex gap-1">
+        <a href="/dashboard/bots/{{ bot._id }}/mistakes" class="btn btn-secondary">Mistakes</a>
+        <a href="/dashboard/bots/{{ bot._id }}/roles" class="btn btn-secondary">Roles</a>
+        <a href="/chat/{{ bot.slug }}" class="btn btn-secondary" target="_blank">Open Chat</a>
+        <a href="/dashboard" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+
+{% if request.query_params.get('saved') %}
+<div class="alert alert-success">Settings saved.</div>
+{% endif %}
+
+<div class="card" style="max-width: 700px;">
+    <form method="post" action="/dashboard/bots/{{ bot._id }}/settings">
+        <div class="form-group">
+            <label for="kb_url">Knowledge Base URL</label>
+            <input type="url" id="kb_url" name="kb_url" value="{{ bot.kb_url }}"
+                {% if not permissions.edit_kb_url %}disabled{% endif %}>
+            <p class="text-muted mt-1">Saving will immediately scrape this URL and cache the results.</p>
+        </div>
+
+
+        <div class="form-group">
+            <label for="additional_guidelines">Additional Guidelines</label>
+            <textarea id="additional_guidelines" name="additional_guidelines"
+                {% if not permissions.edit_guidelines %}disabled{% endif %}>{{ bot.additional_guidelines }}</textarea>
+            <p class="text-muted mt-1">These are injected into the bot's system prompt.</p>
+        </div>
+
+        <div class="form-group">
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:fit-content; white-space:nowrap;">
+                <input type="checkbox" name="auto_fix_enabled"
+                    {% if bot.auto_fix_enabled %}checked{% endif %}
+                    {% if not permissions.toggle_autofix %}disabled{% endif %}>
+                Enable Auto-Fix
+            </label>
+            <p class="text-muted mt-1">When enabled, approved fixes are applied automatically without manual review.</p>
+        </div>
+
+        <button type="submit" class="btn btn-primary"
+            {% if not permissions.edit_kb_url and not permissions.edit_guidelines and not permissions.toggle_autofix %}
+            disabled{% endif %}>
+            Save Settings
+        </button>
+    </form>
+</div>
+
+<div class="kb-panel" id="kb-status">
+    <div class="kb-panel-left">
+        <span class="kb-panel-label">Knowledge Base</span>
+        {% if request.query_params.get('scraping') or scraping %}
+        <span class="kb-panel-count" id="kb-count-text">Scraping…</span>
+        {% elif kb_stats %}
+        <span class="kb-panel-count">{{ kb_stats.article_count }} article{{ 's' if kb_stats.article_count != 1 }}</span>
+        {% else %}
+        <span class="kb-panel-count kb-panel-empty">Not scraped</span>
+        {% endif %}
+    </div>
+    <div class="kb-panel-right">
+        {% if request.query_params.get('scraping') or scraping %}
+        <span class="kb-indicator kb-indicator-visiting" id="kb-indicator"></span>
+        <span class="kb-panel-url" id="kb-latest-url">connecting…</span>
+        {% elif kb_stats and kb_stats.scraped_at %}
+        <span class="kb-indicator kb-indicator-done"></span>
+        <span class="kb-panel-url">Last scraped {{ kb_stats.scraped_at.strftime('%b %d, %Y at %H:%M') }}</span>
+        {% else %}
+        <span class="kb-indicator kb-indicator-none"></span>
+        <span class="kb-panel-url">Save settings to trigger a scrape</span>
+        {% endif %}
+    </div>
+</div>
+
+{% if request.query_params.get('scraping') or scraping %}
+<script>
+(function () {
+    let scraped = 0, visited = 0;
+    const countText  = document.getElementById('kb-count-text');
+    const indicator  = document.getElementById('kb-indicator');
+    const latestUrl  = document.getElementById('kb-latest-url');
+
+    const indicatorClass = { visiting: 'kb-indicator-visiting', scraped: 'kb-indicator-done', failed: 'kb-indicator-failed' };
+    const urlColor       = { visiting: 'var(--scrape-yellow)', scraped: 'var(--scrape-green)', failed: 'var(--scrape-red)' };
+
+    const es = new EventSource('/dashboard/bots/{{ bot._id }}/scrape-stream');
+
+    es.onmessage = function (e) {
+        const data = e.data;
+
+        if (data.startsWith('__done__')) {
+            es.close();
+            const count = data.replace('__done__', '') || scraped;
+            countText.textContent = `${count} article${count != 1 ? 's' : ''}`;
+            indicator.className = `kb-indicator ${scraped > 0 ? 'kb-indicator-done' : 'kb-indicator-failed'}`;
+            latestUrl.textContent = `Scraped just now`;
+            latestUrl.style.color = '';
+            return;
+        }
+
+        const sep = data.indexOf('|');
+        const statusType = data.substring(0, sep);
+        const url = data.substring(sep + 1);
+
+        if (statusType === 'scraped') scraped++;
+        visited++;
+
+        countText.textContent = `${scraped} scraped · ${visited} visited`;
+        indicator.className = `kb-indicator ${indicatorClass[statusType] || ''}`;
+        latestUrl.textContent = url.replace(/^https?:\/\/[^/]+/, '');
+        latestUrl.style.color = urlColor[statusType] || '';
+    };
+
+    es.onerror = function () {
+        es.close();
+        countText.textContent = 'Connection lost';
+        indicator.className = 'kb-indicator kb-indicator-failed';
+        latestUrl.textContent = '';
+    };
+})();
+</script>
+{% endif %}
+{% endblock %}

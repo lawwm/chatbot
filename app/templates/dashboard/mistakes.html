@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ bot.name }} — Mistakes{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>{{ bot.name }}</h1>
+        <p class="text-muted">Reported Mistakes</p>
+    </div>
+    <a href="/dashboard/bots/{{ bot._id }}/settings" class="btn btn-secondary">Back to Settings</a>
+</div>
+
+<!-- Open Mistakes -->
+<div class="card">
+    <h2 style="font-size:1.1rem; margin-bottom:1rem;">Open ({{ open_mistakes | length }})</h2>
+    {% if not open_mistakes %}
+    <p class="text-muted">No open mistakes. Great job!</p>
+    {% else %}
+    {% for mistake in open_mistakes %}
+    <div id="mistake-{{ mistake._id }}" style="border:1px solid var(--border); border-radius:var(--radius); padding:1rem; margin-bottom:1rem;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:0.75rem;">
+            <div>
+                <p style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-bottom:0.25rem;">CUSTOMER SAID</p>
+                <p style="font-size:0.9rem;">{{ mistake.customer_message }}</p>
+            </div>
+            <div>
+                <p style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-bottom:0.25rem;">BOT RESPONDED</p>
+                <p style="font-size:0.9rem;">{{ mistake.bot_response }}</p>
+            </div>
+        </div>
+        <div style="background:var(--bg); padding:0.75rem; border-radius:var(--radius); margin-bottom:0.75rem;">
+            <p style="font-size:0.75rem; font-weight:600; color:var(--danger); margin-bottom:0.25rem;">CUSTOMER COMPLAINT</p>
+            <p style="font-size:0.9rem;">{{ mistake.complaint }}</p>
+        </div>
+
+        <div id="fix-area-{{ mistake._id }}">
+            {% if can_approve %}
+            <button class="btn btn-primary"
+                hx-post="/dashboard/bots/{{ bot._id }}/mistakes/{{ mistake._id }}/analyze"
+                hx-target="#fix-area-{{ mistake._id }}"
+                hx-swap="innerHTML"
+                hx-indicator="#spinner-{{ mistake._id }}">
+                Analyze &amp; Suggest Fix
+            </button>
+            <span id="spinner-{{ mistake._id }}" class="htmx-indicator text-muted" style="font-size:0.8rem; margin-left:0.5rem;">Analyzing...</span>
+            {% else %}
+            <span class="text-muted" style="font-size:0.85rem;">Awaiting review by an authorized user.</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+</div>
+
+<!-- Archived Mistakes -->
+{% if archived %}
+<div class="card mt-3">
+    <h2 style="font-size:1.1rem; margin-bottom:1rem;">Archive (last 20)</h2>
+    <table class="table">
+        <thead><tr><th>Customer Message</th><th>Complaint</th><th>Fix Applied</th><th>Fixed At</th></tr></thead>
+        <tbody>
+        {% for m in archived %}
+        <tr>
+            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ m.customer_message }}</td>
+            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ m.complaint }}</td>
+            <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ m.fix_applied }}</td>
+            <td style="white-space:nowrap;">{{ m.fixed_at.strftime('%Y-%m-%d %H:%M') if m.fixed_at else '' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

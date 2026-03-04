@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Atome Bot{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <link rel="stylesheet" href="/static/css/main.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% block nav %}
+    <nav class="navbar">
+        <a class="brand" href="/bots">Atome Bot Platform</a>
+        <div class="nav-links">
+            <a href="/bots">Bots</a>
+            {% if user %}
+            <a href="/dashboard">Dashboard</a>
+            {% if user.has_creation_role %}
+            <a href="/meta">Meta</a>
+            {% endif %}
+            <form method="post" action="/auth/logout" style="display:inline">
+                <button type="submit" class="btn-link">Logout</button>
+            </form>
+            {% else %}
+            <a href="/auth/login">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endblock %}
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
