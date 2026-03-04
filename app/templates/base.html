@@ -11,11 +11,10 @@
 <body>
     {% block nav %}
     <nav class="navbar">
-        <a class="brand" href="/bots">Atome Bot Platform</a>
+        <a class="brand" href="/dashboard">Atome Bot Platform</a>
         <div class="nav-links">
-            <a href="/bots">Bots</a>
+            <a href="/dashboard">Bots</a>
             {% if user %}
-            <a href="/dashboard">Dashboard</a>
             {% if user.has_creation_role %}
             <a href="/meta">Meta</a>
             {% endif %}

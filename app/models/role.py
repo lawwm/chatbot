@@ -5,13 +5,14 @@ from enum import IntFlag
 
 
 class Permission(IntFlag):
-    EDIT_KB_URL     = 1 << 0   # 1
-    EDIT_GUIDELINES = 1 << 1   # 2
-    TOGGLE_AUTOFIX  = 1 << 2   # 4
-    REVIEW_MISTAKES = 1 << 3   # 8
-    APPROVE_FIXES   = 1 << 4   # 16
-    MANAGE_ROLES    = 1 << 5   # 32
-    DELETE_BOT      = 1 << 6   # 64
+    VIEW_SETTINGS   = 1 << 0   # 1
+    EDIT_KB_URL     = 1 << 1   # 2
+    EDIT_GUIDELINES = 1 << 2   # 4
+    TOGGLE_AUTOFIX  = 1 << 3   # 8
+    REVIEW_MISTAKES = 1 << 4   # 16
+    APPROVE_FIXES   = 1 << 5   # 32
+    MANAGE_ROLES    = 1 << 6   # 64
+    DELETE_BOT      = 1 << 7   # 128
 
     @classmethod
     def all(cls) -> int:

@@ -21,41 +21,38 @@ def slugify(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
-@router.get("/bots", response_class=HTMLResponse)
-async def public_bot_list(request: Request):
-    db = get_db()
-    user = None
-    session_id = request.cookies.get("session_id")
-    if session_id:
-        user = await get_current_user(session_id)
-    bots = await db.bots.find().to_list(None)
-    for bot in bots:
-        bot["_id"] = str(bot["_id"])
-    return templates.TemplateResponse("bots/index.html", {
-        "request": request, "user": user, "bots": bots
-    })
+@router.get("/bots")
+async def public_bot_list():
+    return RedirectResponse("/dashboard", status_code=302)
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request, user: dict = Depends(require_auth)):
+async def dashboard(request: Request):
     db = get_db()
-    is_creator = user.get("has_creation_role")
-    user_id = str(user["_id"])
+    session_id = request.cookies.get("session_id")
+    user = await get_current_user(session_id) if session_id else None
 
-    if is_creator:
-        bots = await db.bots.find().to_list(None)
-    else:
-        user_roles = await db.user_roles.find({"user_id": user_id}).to_list(None)
-        bot_ids = [ObjectId(ur["bot_id"]) for ur in user_roles]
-        bots = await db.bots.find({"_id": {"$in": bot_ids}}).to_list(None)
-
-    for bot in bots:
-        bot["_id"] = str(bot["_id"])
-        if is_creator or bot.get("created_by") == user_id:
-            bot["can_settings"] = True
+    if user:
+        is_creator = user.get("has_creation_role")
+        user_id = str(user["_id"])
+        if is_creator:
+            bots = await db.bots.find().to_list(None)
         else:
-            bitmap = await get_user_permission_bitmap(user_id, bot["_id"])
-            bot["can_settings"] = bitmap > 0
+            user_roles = await db.user_roles.find({"user_id": user_id}).to_list(None)
+            bot_ids = [ObjectId(ur["bot_id"]) for ur in user_roles]
+            bots = await db.bots.find({"_id": {"$in": bot_ids}}).to_list(None)
+        for bot in bots:
+            bot["_id"] = str(bot["_id"])
+            if is_creator or bot.get("created_by") == user_id:
+                bot["can_settings"] = True
+            else:
+                bitmap = await get_user_permission_bitmap(user_id, bot["_id"])
+                bot["can_settings"] = bool(bitmap & Permission.VIEW_SETTINGS)
+    else:
+        bots = await db.bots.find().to_list(None)
+        for bot in bots:
+            bot["_id"] = str(bot["_id"])
+            bot["can_settings"] = False
 
     return templates.TemplateResponse("dashboard/index.html", {
         "request": request, "user": user, "bots": bots
