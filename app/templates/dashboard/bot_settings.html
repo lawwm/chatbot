@@ -2,6 +2,25 @@
 {% block title %}{{ bot.name }} — Settings{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css">
+<style>
+/* Restore main.css button styles — DaisyUI overrides these */
+.btn {
+    display: inline-flex !important; align-items: center !important; gap: 0.4rem !important;
+    padding: 0.5rem 1rem !important; border-radius: var(--radius) !important;
+    font-size: 0.875rem !important; font-weight: 500 !important; cursor: pointer !important;
+    border: 1px solid transparent !important; text-decoration: none !important;
+    background: var(--surface) !important; color: var(--text) !important;
+    box-shadow: none !important; min-height: unset !important; height: unset !important;
+    animation: none !important;
+}
+.btn-primary { background: var(--primary) !important; color: #fff !important; border-color: transparent !important; }
+.btn-primary:hover { background: var(--primary-dark) !important; }
+.btn-secondary { background: var(--surface) !important; color: var(--text) !important; border-color: var(--border) !important; }
+.btn-secondary:hover { background: var(--bg) !important; }
+.btn-danger { background: var(--danger) !important; color: #fff !important; border-color: transparent !important; }
+.btn.disabled, .btn:disabled { opacity: 0.45 !important; cursor: not-allowed !important; pointer-events: none !important; }
+.badge-success { color: #fff !important; }
+</style>
 {% endblock %}
 {% block content %}
 {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}

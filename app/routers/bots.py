@@ -39,14 +39,24 @@ async def public_bot_list(request: Request):
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, user: dict = Depends(require_auth)):
     db = get_db()
-    if user.get("has_creation_role"):
+    is_creator = user.get("has_creation_role")
+    user_id = str(user["_id"])
+
+    if is_creator:
         bots = await db.bots.find().to_list(None)
     else:
-        user_roles = await db.user_roles.find({"user_id": str(user["_id"])}).to_list(None)
-        bot_ids = list({ur["bot_id"] for ur in user_roles})
+        user_roles = await db.user_roles.find({"user_id": user_id}).to_list(None)
+        bot_ids = [ObjectId(ur["bot_id"]) for ur in user_roles]
         bots = await db.bots.find({"_id": {"$in": bot_ids}}).to_list(None)
+
     for bot in bots:
         bot["_id"] = str(bot["_id"])
+        if is_creator or bot.get("created_by") == user_id:
+            bot["can_settings"] = True
+        else:
+            bitmap = await get_user_permission_bitmap(user_id, bot["_id"])
+            bot["can_settings"] = bitmap > 0
+
     return templates.TemplateResponse("dashboard/index.html", {
         "request": request, "user": user, "bots": bots
     })
