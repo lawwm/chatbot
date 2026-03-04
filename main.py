@@ -1,7 +1,9 @@
 import logging
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.exceptions import HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from contextlib import asynccontextmanager
 
 logging.basicConfig(
@@ -23,6 +25,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Atome Customer Service Bot", lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
+
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: HTTPException):
+    session_id = request.cookies.get("session_id")
+    user = None
+    if session_id:
+        from app.services.sessions import get_current_user
+        user = await get_current_user(session_id)
+    return templates.TemplateResponse(
+        "404.html", {"request": request, "user": user}, status_code=404
+    )
 
 app.include_router(auth.router)
 app.include_router(chat.router)

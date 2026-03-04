@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}404 — Page Not Found{% endblock %}
+{% block content %}
+<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; text-align:center; gap:1rem;">
+    <p style="font-size:5rem; font-weight:800; color:var(--border); line-height:1;">404</p>
+    <h1 style="font-size:1.5rem; font-weight:600;">Page not found</h1>
+    <p class="text-muted">The page you're looking for doesn't exist or has been moved.</p>
+    <a href="/dashboard" class="btn btn-primary" style="margin-top:0.5rem;">Go to Bots</a>
+</div>
+{% endblock %}
