@@ -65,10 +65,41 @@
         </div>
 
         <div class="form-group">
-            <label for="kb_url">Knowledge Base URL</label>
-            <input type="url" id="kb_url" name="kb_url" value="{{ bot.kb_url }}"
-                {% if not permissions.edit_kb_url %}disabled{% endif %}>
-            <p class="text-muted mt-1">Saving will immediately scrape this URL and cache the results.</p>
+            <label>Knowledge Base URLs</label>
+
+            {% if show_kb_banner %}
+            <div id="kb-multi-banner" style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius); padding:0.75rem 1rem; margin-bottom:0.75rem; font-size:0.85rem; color:#1e40af;">
+                <span>💡 You can add multiple knowledge base URLs. Each URL is scraped separately with the same scraper settings. All articles are merged into one knowledge base.</span>
+                <button type="button"
+                    hx-post="/dashboard/dismiss-banner"
+                    hx-vals='{"banner_id": "kb_multi_url"}'
+                    hx-target="#kb-multi-banner"
+                    hx-swap="outerHTML"
+                    style="background:none; border:none; cursor:pointer; color:#1e40af; font-size:0.8rem; white-space:nowrap; text-decoration:underline; padding:0; flex-shrink:0;">
+                    Do not show again
+                </button>
+            </div>
+            {% endif %}
+
+            {% set kb_urls_list = bot.kb_urls if bot.kb_urls else ([bot.kb_url] if bot.kb_url else ['']) %}
+            <div id="kb-urls-container">
+                {% for url in kb_urls_list %}
+                <div class="kb-url-row" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+                    <input type="url" name="kb_url" value="{{ url }}" placeholder="https://…" style="flex:1;"
+                        {% if not permissions.edit_kb_url %}disabled{% endif %}>
+                    {% if loop.first %}
+                    <button type="button" onclick="addKbUrl()" class="btn btn-secondary"
+                        style="flex-shrink:0; padding:0.5rem 0.75rem; font-size:1rem; line-height:1;"
+                        {% if not permissions.edit_kb_url %}disabled{% endif %}>+</button>
+                    {% else %}
+                    <button type="button" onclick="this.closest('.kb-url-row').remove()" class="btn btn-secondary"
+                        style="flex-shrink:0; padding:0.5rem 0.75rem; font-size:1rem; line-height:1; color:var(--danger);"
+                        {% if not permissions.edit_kb_url %}disabled{% endif %}>×</button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <p class="text-muted mt-1">Saving will scrape all URLs and replace the existing knowledge base.</p>
         </div>
 
 
@@ -177,6 +208,23 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+function addKbUrl() {
+    const container = document.getElementById('kb-urls-container');
+    const div = document.createElement('div');
+    div.className = 'kb-url-row';
+    div.style.cssText = 'display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;';
+    div.innerHTML = `
+        <input type="url" name="kb_url" placeholder="https://…" style="flex:1; padding:0.5rem 0.75rem; border:1px solid var(--border); border-radius:var(--radius); font-size:0.9rem; background:var(--surface);">
+        <button type="button" onclick="this.closest('.kb-url-row').remove()"
+            class="btn btn-secondary"
+            style="flex-shrink:0; padding:0.5rem 0.75rem; font-size:1rem; line-height:1; color:var(--danger);">×</button>
+    `;
+    container.appendChild(div);
+    div.querySelector('input').focus();
+}
+</script>
 
 {% if request.query_params.get('scraping') or scraping %}
 <script>

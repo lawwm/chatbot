@@ -67,7 +67,8 @@ async def send_message(request: Request, bot_slug: str, message: str = Form(...)
     messages.append(user_msg)
 
     # Get KB content (cached or scrape)
-    kb_content = await get_kb_content(bot["_id"], bot["kb_url"], bot.get("scraper_settings"))
+    kb_urls = bot.get("kb_urls") or ([bot["kb_url"]] if bot.get("kb_url") else [])
+    kb_content = await get_kb_content(bot["_id"], kb_urls, bot.get("scraper_settings"))
 
     # Call Claude
     assistant_text = await claude_chat(messages, kb_content, bot.get("additional_guidelines", ""))

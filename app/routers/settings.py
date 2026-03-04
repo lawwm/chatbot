@@ -52,19 +52,32 @@ async def settings_page(request: Request, bot_id: str, user: dict = Depends(requ
         }
 
     from app.models.role import Permission as Perm
-    user_id = str(user["_id"])
     can_delete = (
         is_creator
         or bot.get("created_by") == user_id
         or bool(bitmap & Perm.DELETE_BOT)
     )
 
+    show_kb_banner = "kb_multi_url" not in user.get("dismissed_banners", [])
+
     return templates.TemplateResponse("dashboard/bot_settings.html", {
         "request": request, "user": user, "bot": bot, "permissions": permissions,
         "scraping": scrape_progress.is_active(bot_id),
         "kb_stats": kb_stats,
         "can_delete": can_delete,
+        "show_kb_banner": show_kb_banner,
     })
+
+
+@router.post("/dashboard/dismiss-banner", response_class=HTMLResponse)
+async def dismiss_banner(request: Request, banner_id: str = Form(...), user: dict = Depends(require_auth)):
+    db = get_db()
+    from bson import ObjectId
+    await db.users.update_one(
+        {"_id": ObjectId(str(user["_id"]))},
+        {"$addToSet": {"dismissed_banners": banner_id}},
+    )
+    return HTMLResponse("")
 
 
 @router.post("/dashboard/bots/{bot_id}/settings")
@@ -72,7 +85,6 @@ async def update_settings(
     request: Request,
     bot_id: str,
     name: str = Form(None),
-    kb_url: str = Form(None),
     additional_guidelines: str = Form(None),
     auto_fix_enabled: str = Form(None),
     allow_override: str = Form(None),
@@ -88,6 +100,9 @@ async def update_settings(
     user_id = str(user["_id"])
     bitmap = await get_user_permission_bitmap(user_id, bot_id)
     is_creator = await has_creation_role(user)
+
+    form_data = await request.form()
+    kb_urls = [u.strip() for u in form_data.getlist("kb_url") if u.strip()]
 
     updates = {"updated_at": datetime.utcnow()}
     trigger_scrape = False
@@ -105,8 +120,9 @@ async def update_settings(
             "max_chars_per_article": scraper_max_chars,
         }
 
-    if kb_url is not None and (is_creator or bitmap & Permission.EDIT_KB_URL):
-        updates["kb_url"] = kb_url
+    if kb_urls and (is_creator or bitmap & Permission.EDIT_KB_URL):
+        updates["kb_urls"] = kb_urls
+        updates["kb_url"] = kb_urls[0]
         trigger_scrape = True
 
     if additional_guidelines is not None and (is_creator or bitmap & Permission.EDIT_GUIDELINES):
@@ -125,7 +141,7 @@ async def update_settings(
 
         async def _run_scrape():
             try:
-                await scrape_and_store(bot_id, kb_url, scraper_settings)
+                await scrape_and_store(bot_id, kb_urls, scraper_settings)
             except Exception as e:
                 logger.error("Background scrape failed for bot=%s: %s", bot_id, e)
                 await scrape_progress.finish(bot_id, article_count=0)

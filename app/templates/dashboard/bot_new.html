@@ -20,10 +20,17 @@
         </div>
 
         <div class="form-group">
-            <label for="kb_url">Knowledge Base URL</label>
-            <input type="url" id="kb_url" name="kb_url"
-                value="https://help.atome.ph/hc/en-gb/categories/4439682039065-Atome-Card">
-            <p class="text-muted mt-1">The bot will scrape this URL immediately on creation.</p>
+            <label>Knowledge Base URLs</label>
+            <div id="kb-urls-container">
+                <div class="kb-url-row" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+                    <input type="url" name="kb_url"
+                        value="https://help.atome.ph/hc/en-gb/categories/4439682039065-Atome-Card"
+                        placeholder="https://…" style="flex:1;">
+                    <button type="button" onclick="addKbUrl()" class="btn btn-secondary"
+                        style="flex-shrink:0; padding:0.5rem 0.75rem; font-size:1rem; line-height:1;">+</button>
+                </div>
+            </div>
+            <p class="text-muted mt-1">The bot will scrape all URLs immediately on creation.</p>
         </div>
 
         <div class="form-group">
@@ -84,4 +91,20 @@
         <button type="submit" class="btn btn-primary">Create Bot</button>
     </form>
 </div>
+<script>
+function addKbUrl() {
+    const container = document.getElementById('kb-urls-container');
+    const div = document.createElement('div');
+    div.className = 'kb-url-row';
+    div.style.cssText = 'display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;';
+    div.innerHTML = `
+        <input type="url" name="kb_url" placeholder="https://…" style="flex:1; padding:0.5rem 0.75rem; border:1px solid var(--border); border-radius:var(--radius); font-size:0.9rem; background:var(--surface);">
+        <button type="button" onclick="this.closest('.kb-url-row').remove()"
+            class="btn btn-secondary"
+            style="flex-shrink:0; padding:0.5rem 0.75rem; font-size:1rem; line-height:1; color:var(--danger);">×</button>
+    `;
+    container.appendChild(div);
+    div.querySelector('input').focus();
+}
+</script>
 {% endblock %}

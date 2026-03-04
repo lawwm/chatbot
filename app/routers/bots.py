@@ -68,7 +68,6 @@ async def new_bot_page(request: Request, user: dict = Depends(require_creation_r
 async def create_bot(
     request: Request,
     name: str = Form(...),
-    kb_url: str = Form("https://help.atome.ph/hc/en-gb/categories/4439682039065-Atome-Card"),
     additional_guidelines: str = Form(""),
     auto_fix_enabled: str = Form(None),
     allow_override: str = Form(None),
@@ -81,8 +80,12 @@ async def create_bot(
     user: dict = Depends(require_creation_role),
 ):
     db = get_db()
+    form_data = await request.form()
+    kb_urls = [u.strip() for u in form_data.getlist("kb_url") if u.strip()]
+    if not kb_urls:
+        kb_urls = ["https://help.atome.ph/hc/en-gb/categories/4439682039065-Atome-Card"]
+
     slug = slugify(name)
-    # ensure slug uniqueness by appending random suffix if needed
     base_slug = slug
     counter = 1
     while await db.bots.find_one({"slug": slug}):
@@ -101,7 +104,8 @@ async def create_bot(
         "name": name,
         "slug": slug,
         "bot_uuid": uuid.uuid4().hex[:9],
-        "kb_url": kb_url,
+        "kb_url": kb_urls[0],
+        "kb_urls": kb_urls,
         "scraper_settings": scraper_settings,
         "additional_guidelines": additional_guidelines,
         "auto_fix_enabled": auto_fix_enabled == "on",
@@ -136,7 +140,7 @@ async def create_bot(
 
     async def _run_scrape():
         try:
-            await scrape_and_store(bot_id, kb_url, scraper_settings)
+            await scrape_and_store(bot_id, kb_urls, scraper_settings)
         except Exception as e:
             import logging
             logging.getLogger(__name__).error("Scrape failed on creation for bot=%s: %s", bot_id, e)

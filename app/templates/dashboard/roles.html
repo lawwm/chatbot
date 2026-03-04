@@ -14,7 +14,7 @@
     <!-- Create Role -->
     <div class="card">
         <h2 style="font-size:1.1rem; margin-bottom:1rem;">Create Role</h2>
-        <form method="post" action="/dashboard/bots/{{ bot._id }}/roles/create">
+        <form method="post" action="/dashboard/bots/{{ bot._id }}/roles/create" id="create-role-form">
             <div class="form-group">
                 <label>Role Name</label>
                 <input type="text" name="name" placeholder="e.g. Content Editor" required>
@@ -27,10 +27,9 @@
                 </label>
                 {% endfor %}
             </div>
-            <button type="submit" class="btn btn-primary" formaction="/dashboard/bots/{{ bot._id }}/roles/create"
-                onclick="combineBitmap(this.form)">Create Role</button>
+            <input type="hidden" name="permission_bitmap" id="bitmap_hidden">
+            <button type="submit" class="btn btn-primary">Create Role</button>
         </form>
-        <input type="hidden" name="permission_bitmap" id="bitmap_hidden">
     </div>
 
     <!-- Assign Role -->
@@ -65,19 +64,21 @@
     <p class="text-muted">No roles created yet.</p>
     {% else %}
     <table class="table">
-        <thead><tr><th>Name</th><th>Permissions</th><th>Bitmap</th></tr></thead>
+        <thead><tr><th>Name</th><th>Permissions</th></tr></thead>
         <tbody>
         {% for role in roles %}
         <tr>
             <td>{{ role.name }}</td>
             <td>
+                {% set has_any = [] %}
                 {% for value, label in all_permissions %}
                     {% if role.permission_bitmap | bitwise_and(value) %}
                     <span class="badge badge-open">{{ label }}</span>
+                    {% set _ = has_any.append(1) %}
                     {% endif %}
                 {% endfor %}
+                {% if not has_any %}<span class="text-muted">No permissions</span>{% endif %}
             </td>
-            <td><code>{{ role.permission_bitmap }}</code></td>
         </tr>
         {% endfor %}
         </tbody>
@@ -96,8 +97,17 @@
         <tbody>
         {% for ur in user_roles %}
         <tr>
-            <td>{{ ur.user_id }}</td>
-            <td>{{ ur.role_id }}</td>
+            <td>
+                {% set matched = [] %}
+                {% for u in users %}{% if u._id == ur.user_id %}
+                    {{ u.username }}<span class="text-muted" style="font-size:0.75rem; margin-left:0.4rem; font-family:monospace;">{{ ur.user_id[:6] }}</span>
+                    {% set _ = matched.append(1) %}
+                {% endif %}{% endfor %}
+                {% if not matched %}<span class="text-muted" style="font-family:monospace;">{{ ur.user_id[:6] }}</span>{% endif %}
+            </td>
+            <td>
+                {% for r in roles %}{% if r._id == ur.role_id %}{{ r.name }}{% endif %}{% endfor %}
+            </td>
             <td>
                 <form method="post" action="/dashboard/bots/{{ bot._id }}/roles/revoke/{{ ur._id }}">
                     <button type="submit" class="btn btn-link" style="color:var(--danger)">Revoke</button>
@@ -111,13 +121,12 @@
 </div>
 
 <script>
-function combineBitmap(form) {
+document.getElementById('create-role-form').addEventListener('submit', function () {
     let bitmap = 0;
-    form.querySelectorAll('input[type=checkbox][name^=perm_]').forEach(cb => {
+    this.querySelectorAll('input[type=checkbox][name^=perm_]').forEach(cb => {
         if (cb.checked) bitmap |= parseInt(cb.value);
     });
-    form.querySelector('[name=permission_bitmap]').value = bitmap;
-}
-document.querySelector('form').addEventListener('submit', function() { combineBitmap(this); });
+    this.querySelector('[name=permission_bitmap]').value = bitmap;
+});
 </script>
 {% endblock %}

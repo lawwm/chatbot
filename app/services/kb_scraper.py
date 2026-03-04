@@ -18,44 +18,57 @@ DEFAULT_SCRAPER_SETTINGS = {
 }
 
 
-async def scrape_and_store(bot_id: str, kb_url: str, scraper_settings: dict = None) -> list[dict]:
+async def scrape_and_store(bot_id: str, kb_urls: list, scraper_settings: dict = None) -> list[dict]:
     from app.services import scrape_progress
     settings = {**DEFAULT_SCRAPER_SETTINGS, **(scraper_settings or {})}
-    logger.info("Starting scrape for bot=%s url=%s settings=%s", bot_id, kb_url, settings)
 
     async def on_progress(url: str, status: str):
         await scrape_progress.push(bot_id, url, status)
 
+    db = get_db()
+    # Clear previous knowledge base before building a new one
+    await db.kb_content.delete_many({"bot_id": bot_id})
+
+    all_articles = []
     try:
-        articles = await _scrape(kb_url, settings, on_progress)
+        for kb_url in kb_urls:
+            if not kb_url or not kb_url.strip():
+                continue
+            logger.info("Scraping bot=%s url=%s", bot_id, kb_url)
+            try:
+                articles = await _scrape(kb_url, settings, on_progress)
+                all_articles.extend(articles)
+            except Exception as e:
+                logger.error("Scrape failed for bot=%s url=%s: %s", bot_id, kb_url, e)
+
+        await db.kb_content.insert_one({
+            "bot_id": bot_id,
+            "kb_urls": kb_urls,
+            "articles": all_articles,
+            "scraped_at": datetime.utcnow(),
+        })
+        logger.info("Scrape complete for bot=%s — %d article(s) stored", bot_id, len(all_articles))
+        await scrape_progress.finish(bot_id, article_count=len(all_articles))
     except Exception as e:
+        logger.error("Fatal scrape error for bot=%s: %s", bot_id, e)
         await scrape_progress.finish(bot_id, article_count=0)
         raise
 
-    # get db
-    db = get_db()
-    await db.kb_content.replace_one(
-        {"bot_id": bot_id},
-        {"bot_id": bot_id, "kb_url": kb_url, "articles": articles, "scraped_at": datetime.utcnow()},
-        upsert=True,
-    )
-    logger.info("Scrape complete for bot=%s — %d article(s) stored", bot_id, len(articles))
-    await scrape_progress.finish(bot_id, article_count=len(articles))
-    return articles
+    return all_articles
 
 
-async def get_kb_content(bot_id: str, kb_url: str, scraper_settings: dict = None) -> str:
+async def get_kb_content(bot_id: str, kb_urls: list, scraper_settings: dict = None) -> str:
     db = get_db()
-    cached = await db.kb_content.find_one({"bot_id": bot_id, "kb_url": kb_url})
+    cached = await db.kb_content.find_one({"bot_id": bot_id})
     if cached:
         logger.debug("KB cache hit for bot=%s", bot_id)
         articles = cached["articles"]
     else:
         logger.info("KB cache miss for bot=%s — scraping now", bot_id)
-        articles = await scrape_and_store(bot_id, kb_url, scraper_settings)
+        articles = await scrape_and_store(bot_id, kb_urls, scraper_settings)
 
     if not articles:
-        logger.warning("No articles found for bot=%s url=%s", bot_id, kb_url)
+        logger.warning("No articles found for bot=%s", bot_id)
         return "No knowledge base content available."
 
     parts = [f"## {a['title']}\n{a['content']}" for a in articles]
