@@ -38,12 +38,14 @@
 The bot is seeded with the Atome Card help center (`https://help.atome.ph/hc/en-gb/categories/4439682039065-Atome-Card`). When a customer asks a question that is covered by the knowledge base, the bot retrieves the relevant content using vector search and answers accurately.
 
 **Steps:**
-1. Go to `/chat/{bot-slug}` — no login required.
-2. Type a question about the Atome Card (e.g. *"What is the Atome Card?"* or *"How do I activate my card?"*).
-3. The bot responds using content scraped from the help center.
+1. Go to [App](https://chatbot-production-4f99.up.railway.app/) — no login required.
+2. Click into Atome Bot. 
+3. Type a question about the Atome Card (e.g. *"What is the Atome Card?"* or *"What is a Temporary Limit?"*).
+4. The bot responds using content scraped from the help center.
 
 <!-- SCREENSHOT: Customer chat showing a knowledge base question and bot response -->
-
+<img width="1781" height="559" alt="image" src="https://github.com/user-attachments/assets/1ceff7f8-2d15-4c25-86d3-75d7abe1fd8f" />
+<img width="1684" height="723" alt="image" src="https://github.com/user-attachments/assets/d4b07989-e1b7-4e4f-a023-b6c6fc338daa" />
 ---
 
 ### 2. Application Status Tool Call
@@ -58,6 +60,7 @@ When a customer asks about their card application status, the bot calls a backen
 5. The bot reports the application status returned by the function.
 
 <!-- SCREENSHOT: Chat showing the blue "get application status" pill and the bot's status response -->
+<img width="1660" height="868" alt="image" src="https://github.com/user-attachments/assets/88c7fd59-b0e2-477c-934f-d8627f858258" />
 
 ---
 
@@ -73,6 +76,7 @@ When a customer reports a failed or declined transaction, the bot calls `get_tra
 5. The bot reports the transaction status.
 
 <!-- SCREENSHOT: Chat showing the blue "get transaction status" pill and the bot's response -->
+<img width="1671" height="859" alt="image" src="https://github.com/user-attachments/assets/45fa48c6-4894-433e-b2c0-4a68ef1f4d7f" />
 
 ---
 
@@ -83,11 +87,15 @@ Managers can change the URL the bot scrapes for knowledge base content. The bot 
 **Steps:**
 1. Log in and go to **Dashboard → (Bot) → Settings**.
 2. Update the **Knowledge Base URL** field with a new URL.
-3. Click **Save Settings**.
-4. A live scraping progress bar appears at the bottom of the page, showing each URL being visited (yellow = visiting, green = scraped, red = failed).
-5. Once complete, the bot uses the new knowledge base for all future conversations.
+3. Click **Save Settings** to modify and change web scraping settings.
+4. Click **Repopulate Knowledge Base** to initiate web scraping.
+5. A live scraping progress bar appears at the bottom of the page, showing each URL being visited (yellow = visiting, green = scraped, red = failed).
+6. Once complete, the bot uses the new knowledge base for all future conversations.
 
 <!-- SCREENSHOT: Settings page showing the KB URL field and the live scrape progress bar -->
+<img width="1665" height="837" alt="image" src="https://github.com/user-attachments/assets/06419b14-e48a-480a-b3b8-265c2707ddfc" />
+<img width="1766" height="727" alt="image" src="https://github.com/user-attachments/assets/2ce90aab-e0a7-465d-91fa-021d6a9851fc" />
+<img width="1312" height="861" alt="image" src="https://github.com/user-attachments/assets/09faa7f5-96c1-4cfb-907f-2cf157983aa2" />
 
 ---
 
@@ -102,6 +110,7 @@ Managers can write custom instructions (tone, tool-use rules, restricted topics)
 4. Return to the customer chat — the bot now follows the updated instructions.
 
 <!-- SCREENSHOT: Settings page showing the guidelines editor with Edit/Preview tabs -->
+<img width="829" height="597" alt="image" src="https://github.com/user-attachments/assets/f016d583-5923-42d8-8f08-0e6936722943" />
 
 ---
 
@@ -117,6 +126,8 @@ Customers can flag incorrect bot responses directly from the chat interface — 
 5. A success banner confirms the report was received.
 
 <!-- SCREENSHOT: Chat interface showing the "Report mistake" button and the modal with the complaint field -->
+<img width="884" height="638" alt="image" src="https://github.com/user-attachments/assets/d52a76d2-af86-4446-90da-d43cf029ef4c" />
+<img width="976" height="723" alt="image" src="https://github.com/user-attachments/assets/286fee0a-0491-47ce-a451-6ed235ec19c7" />
 
 ---
 
@@ -135,8 +146,11 @@ Every reported mistake is visible to managers in the dashboard, showing the full
 5. Edit if needed, then click **Apply Fix & Archive**.
 
 <!-- SCREENSHOT: Mistakes page showing an open mistake card with "Analyze & Suggest Fix" button -->
+<img width="1238" height="498" alt="image" src="https://github.com/user-attachments/assets/c31babf2-5a55-4e5b-b167-3d2b5647125f" />
 
 <!-- SCREENSHOT: Mistakes page showing the suggested fix text area and "Apply Fix & Archive" button -->
+<img width="1231" height="770" alt="image" src="https://github.com/user-attachments/assets/b837a169-4c2e-40b3-be8e-3f02c3efb390" />
+<img width="1172" height="798" alt="image" src="https://github.com/user-attachments/assets/b52dd748-e772-46b9-b418-9fe59307d940" />
 
 ---
 
@@ -153,8 +167,13 @@ When **Auto-Fix** is enabled on a bot, mistakes are automatically analyzed and t
 6. Scroll down to the **Archive** section — the fix is logged with the timestamp and the full guidelines text that was applied.
 
 <!-- SCREENSHOT: Mistakes page Archive section showing a row with the fix that was applied -->
+<img width="458" height="237" alt="image" src="https://github.com/user-attachments/assets/3095614c-0ab4-43c2-8b8f-6d7469ca9218" />
+
 
 <!-- SCREENSHOT: Bot settings page showing updated guidelines after auto-fix was applied -->
+<img width="1267" height="561" alt="image" src="https://github.com/user-attachments/assets/104914ed-4e7a-4587-acee-b07d3f9559ad" />
+
+<img width="1203" height="870" alt="image" src="https://github.com/user-attachments/assets/3b5b95cc-59b5-435e-ab70-dcaa5fb561a5" />
 
 ---
 
@@ -171,6 +190,7 @@ The Metabot is a conversational AI assistant for managers. Instead of clicking t
 4. Click **New chat** to start a fresh session.
 
 <!-- SCREENSHOT: Metabot page showing the chat interface and conversation sidebar -->
+<img width="1901" height="873" alt="image" src="https://github.com/user-attachments/assets/098cbc09-0c33-4318-8da3-b616bcc6d01c" />
 
 ---
 
@@ -185,8 +205,11 @@ Managers can create a fully configured bot just by describing it in plain langua
 4. The new bot immediately appears in the dashboard.
 
 <!-- SCREENSHOT: Metabot chat showing the tool pill and the bot creation confirmation message -->
+<img width="1876" height="866" alt="image" src="https://github.com/user-attachments/assets/4cef1ef5-3164-460a-b03b-400a0e6c30b6" />
+
 
 <!-- SCREENSHOT: Dashboard showing the newly created bot card -->
+<img width="1442" height="686" alt="image" src="https://github.com/user-attachments/assets/3b2883ab-ffab-4991-bb82-aab00f3386fd" />
 
 ---
 
@@ -202,6 +225,8 @@ After creating a bot, managers can tell the Metabot to populate the knowledge ba
 5. Click **✕** to dismiss the panel.
 
 <!-- SCREENSHOT: Metabot chat showing the live scraping progress panel with URL status and article count -->
+<img width="1093" height="698" alt="image" src="https://github.com/user-attachments/assets/d5140856-b5be-46da-9afb-28da052db9fb" />
+<img width="1887" height="868" alt="image" src="https://github.com/user-attachments/assets/e9a9bdb5-6d99-4993-8f47-ed72010c9697" />
 
 ---
 
@@ -216,8 +241,11 @@ Managers can update any bot setting — guidelines, KB URL, auto-fix toggles —
 4. Navigate to **Dashboard → SupportBot → Settings** — the guidelines field reflects the update.
 
 <!-- SCREENSHOT: Metabot chat showing two tool pills (get_bot_settings, update_bot_settings) and the confirmation message -->
+<img width="1876" height="869" alt="image" src="https://github.com/user-attachments/assets/74e47d3d-b8cb-4ed2-a516-7de25853c638" />
+<img width="1876" height="869" alt="image" src="https://github.com/user-attachments/assets/29099b65-f5ea-479a-b9a7-19f28a1552b4" />
 
 <!-- SCREENSHOT: Bot settings page showing the updated guidelines -->
+<img width="1476" height="736" alt="image" src="https://github.com/user-attachments/assets/0b71d8ca-1ff5-4ee7-842b-34a822ee54a9" />
 
 ---
 
@@ -235,10 +263,14 @@ Managers can review, analyze, and fix reported mistakes entirely through the Met
 7. The fix is now live — the bot's behavior is updated for all future conversations.
 
 <!-- SCREENSHOT: Metabot listing open mistakes with IDs and complaint summaries -->
+<img width="870" height="584" alt="image" src="https://github.com/user-attachments/assets/fc25679c-cfdd-4bda-92fd-378121379227" />
 
 <!-- SCREENSHOT: Metabot showing the suggested fix after analyzing a mistake -->
+<img width="761" height="809" alt="image" src="https://github.com/user-attachments/assets/7218a245-af4a-424b-bda2-517ee4b98e83" />
 
 <!-- SCREENSHOT: Metabot confirming the fix was applied and the mistake archived -->
+<img width="779" height="632" alt="image" src="https://github.com/user-attachments/assets/9d3ec1ec-e4aa-48ae-a813-9979705bd6d7" />
+<img width="1139" height="206" alt="image" src="https://github.com/user-attachments/assets/d2b023c6-cd60-4595-b144-60655f6b8b94" />
 
 ---
 
@@ -254,6 +286,8 @@ The dashboard is fully protected by server-side session authentication. Customer
 3. On success you are redirected to the **Dashboard**.
 4. A session cookie is set (HTTPOnly, server-side session stored in MongoDB with a configurable TTL).
 
+
+
 **Logging out:**
 1. Click **Logout** in the top navigation bar.
 2. The session is invalidated and the cookie is cleared immediately.
@@ -263,8 +297,10 @@ The dashboard is fully protected by server-side session authentication. Customer
 - Customer chat at `/chat/{slug}` is always public — no login required.
 
 <!-- SCREENSHOT: Login page -->
+<img width="1178" height="615" alt="image" src="https://github.com/user-attachments/assets/6e1b9630-fbd2-46d8-928a-e94cdece8097" />
 
 <!-- SCREENSHOT: Dashboard after login showing the user's bots -->
+<img width="1262" height="565" alt="image" src="https://github.com/user-attachments/assets/48ae0744-c048-47f6-9a1b-29a719640ea6" />
 
 ---
 
@@ -292,6 +328,9 @@ Each bot has its own role system. A creator can define named roles with any comb
 4. Click **Create Role**.
 
 <!-- SCREENSHOT: Roles page showing the role creation form with permission checkboxes -->
+<img width="1146" height="89" alt="image" src="https://github.com/user-attachments/assets/b5a8ddb6-c85e-495f-8434-b99b8bc7400f" />
+<img width="1017" height="659" alt="image" src="https://github.com/user-attachments/assets/55b72559-bd0d-45df-aa87-40e796f63feb" />
+<img width="975" height="776" alt="image" src="https://github.com/user-attachments/assets/3881d0ec-dba6-4320-953f-8fd89fbe59a6" />
 
 **Assigning a role to a user:**
 1. Under the role card, enter a username.
@@ -299,12 +338,15 @@ Each bot has its own role system. A creator can define named roles with any comb
 3. The user immediately gains those permissions on this bot.
 
 <!-- SCREENSHOT: Role card showing an assigned user with a Revoke button -->
+<img width="1073" height="727" alt="image" src="https://github.com/user-attachments/assets/e0323145-c142-4c92-b7c6-19f708efb242" />
+<img width="999" height="473" alt="image" src="https://github.com/user-attachments/assets/1215ba23-7b6f-47f8-b303-bda0ad8f0790" />
 
 **Revoking and deleting:**
 - Click **Revoke** next to a username to remove their assignment.
 - Click **Delete Role** to permanently remove the role and all its assignments.
 
 <!-- SCREENSHOT: Roles page showing multiple roles with assigned users -->
+<img width="1092" height="165" alt="image" src="https://github.com/user-attachments/assets/bcf62434-8f60-43b7-b6cc-7a86c2568a8d" />
 
 ---
 
@@ -319,6 +361,8 @@ The platform supports any number of bots. The dashboard gives a bird's-eye view 
 4. Click **New Bot** to create another bot. Each bot has its own independent knowledge base, guidelines, role assignments, and mistake history.
 
 <!-- SCREENSHOT: Dashboard showing multiple bot cards with their quick-action links -->
+<img width="920" height="380" alt="image" src="https://github.com/user-attachments/assets/146f4392-630a-4140-b7d7-2f4064d4ae02" />
+<img width="952" height="621" alt="image" src="https://github.com/user-attachments/assets/0cb53031-0fed-4648-9ab9-c15009c86e04" />
 
 ---
 
@@ -336,35 +380,13 @@ Each bot can be set to **public** (anyone with the link can chat) or **private**
 - **Public off:** Unauthenticated visitors to `/chat/{slug}` are turned away. Only users who have been assigned a role on that bot (and are logged in) can access the chat.
 
 <!-- SCREENSHOT: Settings page showing the Public toggle checkbox -->
+<img width="953" height="709" alt="image" src="https://github.com/user-attachments/assets/21d77159-6fbe-4961-a484-590e3fee1cd5" />
+<img width="931" height="293" alt="image" src="https://github.com/user-attachments/assets/40dda02c-9a8e-40b1-b493-4676e6f94e4c" />
 
 ---
 
-## Use MetaBot to create a bot via conversation:
-
-<img width="1896" height="941" alt="Screenshot 2026-03-06 001620" src="https://github.com/user-attachments/assets/f32e370a-16db-414f-a6c6-791cd7cd5bc4" />
-
-### -> Tell the MetaBot how you want to create the Bot.
-
-<img width="1898" height="938" alt="Screenshot 2026-03-06 001628" src="https://github.com/user-attachments/assets/c8e82fb4-c0a9-4efb-bf85-aad7e5993a58" />
-
-### -> The MetaBot will create and display the information for you, as well as guide you through Bot creation!
-
-<img width="1891" height="935" alt="Screenshot 2026-03-06 001639" src="https://github.com/user-attachments/assets/5f1f2a51-8838-4ada-9ea3-9b757c99908d" />
-
-### -> Blue pills will appear on the top left of chat conversations to tell you that an actual function has been called.
-
-<img width="1802" height="630" alt="Screenshot 2026-03-06 001652" src="https://github.com/user-attachments/assets/db982c86-adca-480a-af80-fab914ed0963" />
-
-### -> You can edit settings of the bot as well!
-
-<img width="1877" height="932" alt="Screenshot 2026-03-06 001702" src="https://github.com/user-attachments/assets/cd121c77-2f9e-4b0b-9012-8a62e42a9ea0" />
-
-### -> You can also trigger web scraping using the knowledge base URL.
-
-<img width="1858" height="935" alt="Screenshot 2026-03-06 001712" src="https://github.com/user-attachments/assets/29ff59aa-fb66-40a6-9d82-bc2d045d95d2" />
-
-### -> Sometimes the agent hallucinates web scraping, but the blue pill for tooling will only appear if web scraping did actually happen.
+### Details
+Sometimes the agent hallucinates web scraping, but the blue pill for tooling will only appear if web scraping did actually happen. You can keep prompting the MetaBot until you are sure it actually did start the web scraping.
 
 <img width="1883" height="931" alt="image" src="https://github.com/user-attachments/assets/a648fdd1-ccbc-4610-a548-8abdcd03a9a0" />
 
-### -> You can keep prompting the MetaBot until you are sure it actually did start the web scraping.
