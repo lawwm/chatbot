@@ -21,26 +21,72 @@
             transition: background 0.1s;
         }
         .conv-item:hover { background: rgba(0,0,0,0.06); }
-        .conv-item.active {
-            background: rgba(37,99,235,0.1);
-        }
+        .conv-item.active { background: rgba(37,99,235,0.1); }
+        .conv-item.active:hover { background: rgba(37,99,235,0.17); }
         .conv-item.active .conv-link { color: #2563eb; font-weight: 500; }
         .conv-link {
             flex: 1; padding: 0.4rem 0.55rem; font-size: 0.8rem;
-            text-decoration: none; color: var(--text-muted);
+            text-decoration: none; color: #6b7280;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             display: block; min-width: 0;
             transition: color 0.1s;
         }
-        .conv-item:hover .conv-link { color: var(--text); }
+        .conv-item:hover .conv-link { color: #111827; }
+        .conv-item.active:hover .conv-link { color: #1d4ed8; }
         .conv-delete {
             flex-shrink: 0; padding: 0.3rem 0.4rem;
             background: none; border: none; cursor: pointer;
-            color: var(--text-muted); font-size: 0.7rem;
+            color: #6b7280; font-size: 0.7rem;
             opacity: 0; line-height: 1; transition: opacity 0.1s;
         }
         .conv-item:hover .conv-delete { opacity: 0.4; }
         .conv-delete:hover { opacity: 0.9 !important; }
+        .conv-item form { margin: 0; }
+        .new-chat-btn:hover { background: #1d4ed8 !important; }
+
+        /* Markdown content inside chat bubbles */
+        .md-content table {
+            border-collapse: collapse;
+            margin: 0.5rem 0;
+            font-size: 0.8rem;
+            width: 100%;
+        }
+        .md-content th, .md-content td {
+            border: 1px solid #d1d5db;
+            padding: 0.3rem 0.6rem;
+            text-align: left;
+        }
+        .md-content th {
+            background: #e5e7eb;
+            font-weight: 600;
+        }
+        .md-content tr:nth-child(even) td { background: #f3f4f6; }
+        .md-content p { margin: 0.25rem 0; }
+        .md-content ul, .md-content ol { margin: 0.25rem 0 0.25rem 1.2rem; }
+        .md-content li { margin: 0.1rem 0; }
+        .md-content code {
+            background: #e5e7eb;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.78rem;
+        }
+        .md-content pre {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 0.4rem 0;
+            font-size: 0.78rem;
+        }
+        .md-content pre code { background: none; padding: 0; color: inherit; }
+        .md-content strong { font-weight: 600; }
+        .md-content h1, .md-content h2, .md-content h3 {
+            font-weight: 600; margin: 0.4rem 0 0.2rem;
+        }
+        .md-content h1 { font-size: 1rem; }
+        .md-content h2 { font-size: 0.95rem; }
+        .md-content h3 { font-size: 0.9rem; }
     </style>
 </head>
 <body class="flex flex-col h-screen bg-base-100">
@@ -69,8 +115,8 @@
 
         <!-- New chat button -->
         <div style="padding:0.65rem 0.65rem 0.5rem;">
-            <a href="/meta/new"
-               style="display:flex; align-items:center; gap:0.4rem; width:100%; padding:0.45rem 0.6rem; background:var(--primary); color:white; border-radius:var(--radius); cursor:pointer; font-size:0.8rem; font-weight:500; text-decoration:none;">
+            <a href="/meta/new" class="new-chat-btn"
+               style="display:flex; align-items:center; gap:0.4rem; width:100%; padding:0.45rem 0.6rem; background:var(--primary); color:white; border-radius:var(--radius); cursor:pointer; font-size:0.8rem; font-weight:500; text-decoration:none; transition:background 0.1s;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 New chat
             </a>
@@ -121,7 +167,7 @@
                 </div>
                 {% else %}
                 <div class="chat chat-start">
-                    <div class="chat-bubble text-sm leading-relaxed !bg-gray-100 !text-gray-900">{{ render_markdown(msg.content) }}</div>
+                    <div class="chat-bubble text-sm leading-relaxed !bg-gray-100 !text-gray-900 md-content">{{ render_markdown(msg.content) }}</div>
                 </div>
                 {% endif %}
                 {% endfor %}
@@ -213,15 +259,50 @@ document.body.addEventListener('htmx:beforeSwap', function(e) {
     }
 });
 
-// When a new conversation is created, update hidden field + active sidebar state
+// When a new conversation is created, build and insert the sidebar item via JS
 document.body.addEventListener('metaNewConv', function(e) {
     const convId = e.detail && e.detail.conv_id;
+    const title = (e.detail && e.detail.title) || 'New chat';
     if (!convId) return;
+
+    // Update hidden conv_id field
     const field = document.getElementById('conv-id-field');
     if (field) field.value = convId;
+
+    // Deactivate all existing items
     document.querySelectorAll('.conv-item').forEach(function(el) {
-        el.classList.toggle('active', el.dataset.convId === convId);
+        el.classList.remove('active');
     });
+
+    // Build and prepend the new sidebar item
+    const div = document.createElement('div');
+    div.className = 'conv-item active';
+    div.id = 'conv-' + convId;
+    div.dataset.convId = convId;
+
+    const a = document.createElement('a');
+    a.href = '/meta/' + convId;
+    a.className = 'conv-link';
+    a.title = title;
+    a.textContent = title;
+
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/meta/' + convId + '/delete';
+    form.style.margin = '0';
+
+    const btn = document.createElement('button');
+    btn.type = 'submit';
+    btn.className = 'conv-delete';
+    btn.title = 'Delete';
+    btn.textContent = '✕';
+
+    form.appendChild(btn);
+    div.appendChild(a);
+    div.appendChild(form);
+
+    const convList = document.getElementById('conv-list');
+    if (convList) convList.insertAdjacentElement('afterbegin', div);
 });
 
 document.body.addEventListener('htmx:responseError', function(e) {

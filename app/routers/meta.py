@@ -115,7 +115,7 @@ async def meta_send(
     })
     if is_new:
         resp.headers["HX-Push-Url"] = f"/meta/{conv_id}"
-        resp.headers["HX-Trigger"] = json.dumps({"metaNewConv": {"conv_id": conv_id}})
+        resp.headers["HX-Trigger"] = json.dumps({"metaNewConv": {"conv_id": conv_id, "title": conv_title}})
     return resp
 
 

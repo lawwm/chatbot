@@ -1,17 +1,4 @@
 <!-- Assistant bubble (appended to #messages-inner) -->
 <div class="chat chat-start">
-    <div class="chat-bubble text-sm leading-relaxed !bg-gray-100 !text-gray-900">{{ render_markdown(assistant_message) }}</div>
+    <div class="chat-bubble text-sm leading-relaxed !bg-gray-100 !text-gray-900 md-content">{{ render_markdown(assistant_message) }}</div>
 </div>
-
-{% if is_new %}
-<!-- OOB: insert new conversation item at the top of the sidebar -->
-<div id="conv-{{ conv_id }}"
-     class="conv-item active"
-     data-conv-id="{{ conv_id }}"
-     hx-swap-oob="afterbegin:#conv-list">
-    <a href="/meta/{{ conv_id }}" class="conv-link" title="{{ conv_title }}">{{ conv_title }}</a>
-    <form method="post" action="/meta/{{ conv_id }}/delete">
-        <button type="submit" class="conv-delete" title="Delete">✕</button>
-    </form>
-</div>
-{% endif %}
