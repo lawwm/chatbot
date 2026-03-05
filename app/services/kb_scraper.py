@@ -5,6 +5,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 from app.database import get_db
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ DEFAULT_SCRAPER_SETTINGS = {
     "strategy": "bfs",
     "delay_ms": 500,
     "timeout_s": 20,
-    "max_chars_per_article": 3000,
+    "max_chars_per_article": 2**31 - 1,
 }
 
 
@@ -54,7 +55,60 @@ async def scrape_and_store(bot_id: str, kb_urls: list, scraper_settings: dict = 
         await scrape_progress.finish(bot_id, article_count=0)
         raise
 
+    # Embed and store vectors after raw articles are saved
+    await _embed_and_store(bot_id, all_articles)
+
     return all_articles
+
+
+def _chunk_text(text: str, size: int = 2000, overlap: int = 200) -> list[str]:
+    chunks, start = [], 0
+    while start < len(text):
+        chunks.append(text[start:start + size])
+        start += size - overlap
+    return chunks
+
+
+async def _embed_and_store(bot_id: str, articles: list[dict]):
+    if not settings.voyage_api_key:
+        logger.warning("VOYAGE_API_KEY not set — skipping embedding for bot=%s", bot_id)
+        return
+    if not articles:
+        logger.warning("No articles to embed for bot=%s", bot_id)
+        return
+    try:
+        import voyageai
+        db = get_db()
+        await db.kb_vectors.delete_many({"bot_id": bot_id})
+        logger.info("Cleared existing kb_vectors for bot=%s", bot_id)
+
+        docs = []
+        texts = []
+        for article in articles:
+            chunks = _chunk_text(article.get("content", ""))
+            for i, chunk in enumerate(chunks):
+                texts.append(chunk)
+                docs.append({
+                    "bot_id": bot_id,
+                    "article_url": article.get("url", ""),
+                    "article_title": article.get("title", ""),
+                    "chunk_index": i,
+                    "text": chunk,
+                })
+        logger.info("Prepared %d chunks from %d articles for bot=%s", len(docs), len(articles), bot_id)
+
+        logger.info("Calling Voyage AI to embed %d chunks...", len(docs))
+        client = voyageai.AsyncClient(api_key=settings.voyage_api_key)
+        result = await client.embed(texts, model="voyage-3-lite", input_type="document")
+        logger.info("Voyage AI returned %d embeddings", len(result.embeddings))
+
+        for doc, embedding in zip(docs, result.embeddings):
+            doc["embedding"] = embedding
+
+        insert_result = await db.kb_vectors.insert_many(docs)
+        logger.info("Saved %d vectors to kb_vectors for bot=%s", len(insert_result.inserted_ids), bot_id)
+    except Exception as e:
+        logger.error("Embedding failed for bot=%s: %s", bot_id, e)
 
 
 async def get_kb_content(bot_id: str, kb_urls: list, scraper_settings: dict = None) -> str:

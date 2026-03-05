@@ -10,6 +10,7 @@ from bson import ObjectId
 from app.database import get_db
 from app.services.claude import chat as claude_chat, suggest_fix, merge_guidelines
 from app.services.kb_scraper import get_kb_content
+from app.services.kb_retrieval import retrieve_chunks
 from app.services.sessions import get_current_user
 from app.utils import render_markdown
 
@@ -66,9 +67,11 @@ async def send_message(request: Request, bot_slug: str, message: str = Form(...)
     user_msg = {"role": "user", "content": message, "timestamp": datetime.utcnow()}
     messages.append(user_msg)
 
-    # Get KB content (cached or scrape)
+    # Get KB content — try vector retrieval first, fall back to full dump
     kb_urls = bot.get("kb_urls") or ([bot["kb_url"]] if bot.get("kb_url") else [])
-    kb_content = await get_kb_content(bot["_id"], kb_urls, bot.get("scraper_settings"))
+    kb_content = await retrieve_chunks(bot["_id"], message)
+    if not kb_content:
+        kb_content = await get_kb_content(bot["_id"], kb_urls, bot.get("scraper_settings"))
 
     # Call Claude
     assistant_text = await claude_chat(messages, kb_content, bot.get("additional_guidelines", ""))
