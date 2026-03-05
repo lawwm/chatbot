@@ -1,61 +1,291 @@
-{% extends "base.html" %}
-{% block title %}Meta-Agent — Build a Bot{% endblock %}
-{% block content %}
-<div class="page-header">
-    <div>
-        <h1>Meta-Agent</h1>
-        <p class="text-muted">Generate bots with AI</p>
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meta Agent</title>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --primary: #2563eb; --primary-dark: #1d4ed8; }
+        [data-theme="light"] {
+            --p: oklch(48.76% 0.2429 264.39);
+            --pf: oklch(42% 0.22 264);
+            --pc: oklch(100% 0 0);
+        }
+        .conv-item {
+            display: flex; align-items: center;
+            border-radius: 5px; margin-bottom: 1px;
+            transition: background 0.1s;
+        }
+        .conv-item:hover { background: rgba(0,0,0,0.06); }
+        .conv-item.active {
+            background: rgba(37,99,235,0.1);
+        }
+        .conv-item.active .conv-link { color: #2563eb; font-weight: 500; }
+        .conv-link {
+            flex: 1; padding: 0.4rem 0.55rem; font-size: 0.8rem;
+            text-decoration: none; color: var(--text-muted);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: block; min-width: 0;
+            transition: color 0.1s;
+        }
+        .conv-item:hover .conv-link { color: var(--text); }
+        .conv-delete {
+            flex-shrink: 0; padding: 0.3rem 0.4rem;
+            background: none; border: none; cursor: pointer;
+            color: var(--text-muted); font-size: 0.7rem;
+            opacity: 0; line-height: 1; transition: opacity 0.1s;
+        }
+        .conv-item:hover .conv-delete { opacity: 0.4; }
+        .conv-delete:hover { opacity: 0.9 !important; }
+    </style>
+</head>
+<body class="flex flex-col h-screen bg-base-100">
+
+<!-- Navbar -->
+<nav class="site-nav shrink-0">
+    <div class="site-nav-inner">
+        <a class="brand" href="/dashboard">Atome Bot Platform</a>
+        <div class="nav-links">
+            <a href="/dashboard">Bots</a>
+            {% if user.allow_create_agent %}
+            <a href="/meta">Meta</a>
+            {% endif %}
+            <form method="post" action="/auth/logout" style="display:inline">
+                <button type="submit">Logout</button>
+            </form>
+        </div>
     </div>
-</div>
+</nav>
 
-<div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; align-items:start;">
-    <div class="card">
-        <h2 style="font-size:1.1rem; margin-bottom:1rem;">Create a New Bot</h2>
-        <form hx-post="/meta/generate"
-              hx-target="#meta-result"
-              hx-swap="innerHTML"
-              hx-encoding="multipart/form-data"
-              hx-indicator="#meta-spinner">
-            <div class="form-group">
-                <label>Bot Name</label>
-                <input type="text" name="bot_name" placeholder="e.g. Loan Support Bot" required>
-            </div>
-            <div class="form-group">
-                <label>Upload a Document (optional)</label>
-                <input type="file" name="doc_file" accept=".txt,.md,.csv">
-                <p class="text-muted mt-1">Supported: .txt, .md, .csv. PDF support coming soon.</p>
-            </div>
-            <div class="form-group">
-                <label>Instructions for the Bot</label>
-                <textarea name="manager_instructions" placeholder="Describe what this bot should do, what topics it covers, how it should behave..." required style="min-height:140px;"></textarea>
-            </div>
-            <div class="flex gap-1 items-center">
-                <button type="submit" class="btn btn-primary">Generate Bot</button>
-                <span id="meta-spinner" class="htmx-indicator text-muted" style="font-size:0.85rem;">Generating...</span>
-            </div>
-        </form>
-    </div>
+<!-- Body -->
+<div class="flex flex-1 overflow-hidden">
 
-    <div>
-        <div id="meta-result"></div>
+    <!-- Sidebar -->
+    <div style="width:220px; flex-shrink:0; border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface);">
 
-        {% if bots %}
-        <div class="card mt-2">
-            <h2 style="font-size:1.1rem; margin-bottom:1rem;">Your Generated Bots</h2>
-            {% for bot in bots %}
-            <div style="display:flex; align-items:center; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--border);">
-                <div>
-                    <p style="font-weight:500;">{{ bot.name }}</p>
-                    <p class="text-muted" style="font-size:0.8rem;">/chat/{{ bot.slug }}</p>
-                </div>
-                <div class="flex gap-1">
-                    <a href="/dashboard/bots/{{ bot._id }}/settings" class="btn btn-secondary">Edit</a>
-                    <a href="/chat/{{ bot.slug }}" class="btn btn-secondary" target="_blank">Chat</a>
-                </div>
+        <!-- New chat button -->
+        <div style="padding:0.65rem 0.65rem 0.5rem;">
+            <a href="/meta/new"
+               style="display:flex; align-items:center; gap:0.4rem; width:100%; padding:0.45rem 0.6rem; background:var(--primary); color:white; border-radius:var(--radius); cursor:pointer; font-size:0.8rem; font-weight:500; text-decoration:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New chat
+            </a>
+        </div>
+
+        <hr style="margin:0 0.65rem 0.4rem; border:none; border-top:1px solid var(--border);">
+
+        <!-- Conversation list -->
+        <div id="conv-list" style="flex:1; overflow-y:auto; padding:0 0.5rem 0.5rem;">
+            {% for conv in conversations %}
+            <div class="conv-item {% if conv.conv_id == active_conv_id %}active{% endif %}"
+                 id="conv-{{ conv.conv_id }}"
+                 data-conv-id="{{ conv.conv_id }}">
+                <a href="/meta/{{ conv.conv_id }}" class="conv-link" title="{{ conv.title }}">
+                    {{ conv.title or "New chat" }}
+                </a>
+                <form method="post" action="/meta/{{ conv.conv_id }}/delete">
+                    <button type="submit" class="conv-delete" title="Delete">✕</button>
+                </form>
             </div>
             {% endfor %}
         </div>
-        {% endif %}
+
+    </div>
+
+    <!-- Chat area -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+
+        <!-- Messages -->
+        <div class="flex-1 overflow-y-auto" id="chat-scroll">
+            <div class="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-2" id="messages-inner">
+
+                {% if not messages %}
+                <div class="chat chat-start">
+                    <div class="chat-bubble text-sm !bg-gray-100 !text-gray-900">
+                        Hi! I'm your bot manager assistant. I can help you
+                        <strong>create bots</strong>, <strong>update settings</strong>,
+                        <strong>review mistakes</strong>, and <strong>manage roles</strong>.
+                        What would you like to do?
+                    </div>
+                </div>
+                {% endif %}
+
+                {% for msg in messages %}
+                {% if msg.role == "user" %}
+                <div class="chat chat-end">
+                    <div class="chat-bubble text-sm !text-white" style="background:var(--primary)">{{ msg.content }}</div>
+                </div>
+                {% else %}
+                <div class="chat chat-start">
+                    <div class="chat-bubble text-sm leading-relaxed !bg-gray-100 !text-gray-900">{{ render_markdown(msg.content) }}</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+            </div>
+        </div>
+
+        <!-- Input -->
+        <div class="shrink-0 bg-base-100 border-t border-base-200 px-4 py-3">
+            <div class="max-w-2xl mx-auto">
+                <form id="chat-form"
+                      hx-post="/meta/send"
+                      hx-target="#messages-inner"
+                      hx-swap="beforeend"
+                      hx-on::after-request="this.reset(); resetTextarea(this); scrollToBottom();">
+                    <input type="hidden" id="conv-id-field" name="conv_id" value="{{ active_conv_id or '' }}">
+                    <div class="relative bg-base-200 rounded-2xl">
+                        <textarea name="message" rows="1" placeholder="Message…"
+                            required
+                            class="w-full bg-transparent rounded-2xl px-4 py-3 pr-14 resize-none border-none outline-none text-sm leading-relaxed overflow-y-hidden"
+                            style="min-height:48px; max-height:180px;"
+                            oninput="autoResize(this)"
+                            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();this.form.requestSubmit();}"></textarea>
+                        <button type="submit" aria-label="Send"
+                            class="btn btn-circle btn-sm absolute right-2 bottom-2 text-white border-none" style="background:var(--primary)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 </div>
-{% endblock %}
+
+<script>
+function scrollToBottom() {
+    const el = document.getElementById('chat-scroll');
+    el.scrollTop = el.scrollHeight;
+}
+scrollToBottom();
+
+function autoResize(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 180) + 'px';
+}
+
+function resetTextarea(form) {
+    const ta = form.querySelector('textarea');
+    if (ta) ta.style.height = '';
+}
+
+function escapeHtml(t) {
+    return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Optimistic user bubble + typing indicator
+document.body.addEventListener('htmx:beforeRequest', function(e) {
+    if (e.detail.elt.id !== 'chat-form') return;
+    const ta = e.detail.elt.querySelector('textarea[name=message]');
+    const msg = (ta && ta.value.trim()) || '';
+    if (!msg) return;
+
+    ta.value = '';
+    ta.style.height = '';
+
+    const inner = document.getElementById('messages-inner');
+
+    const userDiv = document.createElement('div');
+    userDiv.className = 'chat chat-end';
+    userDiv.innerHTML = '<div class="chat-bubble text-sm text-white" style="background:var(--primary)">' + escapeHtml(msg).replace(/\n/g,'<br>') + '</div>';
+    inner.appendChild(userDiv);
+
+    const typingDiv = document.createElement('div');
+    typingDiv.id = 'typing-indicator';
+    typingDiv.className = 'chat chat-start';
+    typingDiv.innerHTML = '<div class="chat-bubble !bg-gray-100"><span class="loading loading-dots loading-sm !text-gray-500"></span></div>';
+    inner.appendChild(typingDiv);
+
+    scrollToBottom();
+});
+
+document.body.addEventListener('htmx:beforeSwap', function(e) {
+    if (e.detail.target && e.detail.target.id === 'messages-inner') {
+        const ti = document.getElementById('typing-indicator');
+        if (ti) ti.remove();
+    }
+});
+
+// When a new conversation is created, update hidden field + active sidebar state
+document.body.addEventListener('metaNewConv', function(e) {
+    const convId = e.detail && e.detail.conv_id;
+    if (!convId) return;
+    const field = document.getElementById('conv-id-field');
+    if (field) field.value = convId;
+    document.querySelectorAll('.conv-item').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.convId === convId);
+    });
+});
+
+document.body.addEventListener('htmx:responseError', function(e) {
+    if (e.detail.elt.id === 'chat-form') {
+        const ti = document.getElementById('typing-indicator');
+        if (ti) ti.remove();
+    }
+});
+
+document.body.addEventListener('htmx:sendError', function(e) {
+    if (e.detail.elt.id === 'chat-form') {
+        const ti = document.getElementById('typing-indicator');
+        if (ti) ti.remove();
+    }
+});
+
+// Right-click to rename a conversation
+document.getElementById('conv-list').addEventListener('contextmenu', function(e) {
+    const link = e.target.closest('.conv-link');
+    if (!link) return;
+    e.preventDefault();
+
+    const item = link.closest('.conv-item');
+    const convId = item.dataset.convId;
+    const currentTitle = link.textContent.trim();
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentTitle;
+    input.style.cssText = 'flex:1; padding:0.3rem 0.5rem; font-size:0.8rem; border:1px solid var(--primary); border-radius:4px; outline:none; background:var(--bg); color:var(--text); min-width:0; width:100%;';
+
+    link.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let done = false;
+
+    function save() {
+        if (done) return;
+        done = true;
+        const newTitle = input.value.trim() || currentTitle;
+        link.textContent = newTitle;
+        input.replaceWith(link);
+        if (newTitle !== currentTitle) {
+            fetch('/meta/' + convId + '/rename', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'title=' + encodeURIComponent(newTitle),
+            });
+        }
+    }
+
+    function cancel() {
+        if (done) return;
+        done = true;
+        input.replaceWith(link);
+    }
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); save(); }
+        if (e.key === 'Escape') { cancel(); }
+    });
+    input.addEventListener('blur', save);
+});
+</script>
+</body>
+</html>

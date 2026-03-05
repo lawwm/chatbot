@@ -129,6 +129,14 @@ async def get_kb_content(bot_id: str, kb_urls: list, scraper_settings: dict = No
     return "\n\n---\n\n".join(parts)
 
 
+_CONTENT_SELECTORS = [
+    "main", "article", "[role='main']",
+    ".article-body", ".entry-content", ".post-content",
+    ".content", ".main-content", ".page-content",
+    "#content", "#main", "#main-content",
+]
+
+
 async def _scrape(url: str, settings: dict, on_progress=None) -> list[dict]:
     max_articles = settings["max_articles"]
     depth = settings["depth"]
@@ -138,8 +146,9 @@ async def _scrape(url: str, settings: dict, on_progress=None) -> list[dict]:
     max_chars = settings["max_chars_per_article"]
 
     parsed_base = urlparse(url)
+    base_netloc = parsed_base.netloc
     visited = set()
-    article_links = []
+    articles = []
     crawl_queue = [(url, 0)]
     use_bfs = strategy == "bfs"
 
@@ -152,8 +161,7 @@ async def _scrape(url: str, settings: dict, on_progress=None) -> list[dict]:
         ))
 
         try:
-            # Phase 1: collect article links
-            while crawl_queue and len(article_links) < max_articles:
+            while crawl_queue and len(articles) < max_articles:
                 current_url, current_depth = crawl_queue.pop(0) if use_bfs else crawl_queue.pop()
                 if current_url in visited:
                     continue
@@ -173,61 +181,59 @@ async def _scrape(url: str, settings: dict, on_progress=None) -> list[dict]:
 
                 soup = BeautifulSoup(await page.content(), "html.parser")
 
-                for a in soup.select("a[href]"):
-                    href = a["href"]
-                    if href.startswith("/"):
-                        href = f"{parsed_base.scheme}://{parsed_base.netloc}{href}"
-                    if "/hc/en-gb/articles/" in href and href not in article_links:
-                        article_links.append(href)
-                        if len(article_links) >= max_articles:
-                            break
+                # --- Extract title ---
+                title_el = soup.select_one("h1") or soup.find("title")
+                title = title_el.get_text(strip=True) if title_el else current_url
 
+                # --- Extract content (generic, priority-ordered selectors) ---
+                body_el = None
+                for selector in _CONTENT_SELECTORS:
+                    body_el = soup.select_one(selector)
+                    if body_el:
+                        break
+                if not body_el:
+                    body_el = soup.find("body")
+
+                content = ""
+                if body_el:
+                    for tag in body_el.select("nav, header, footer, script, style, noscript"):
+                        tag.decompose()
+                    raw = body_el.get_text(separator="\n", strip=True)
+                    content = "\n".join(line for line in raw.splitlines() if line.strip())
+                    content = content[:max_chars]
+
+                if len(content) > 100:
+                    articles.append({"title": title, "url": current_url, "content": content})
+                    logger.debug("Scraped: %s", title)
+                    if on_progress:
+                        await on_progress(current_url, "scraped")
+                else:
+                    logger.warning("Skipped (no content): %s", current_url)
+                    if on_progress:
+                        await on_progress(current_url, "failed")
+
+                # --- Follow same-domain links ---
                 if current_depth < depth:
                     for a in soup.select("a[href]"):
-                        href = a["href"]
+                        href = a.get("href", "").split("#")[0].split("?")[0]
+                        if not href:
+                            continue
                         if href.startswith("/"):
-                            href = f"{parsed_base.scheme}://{parsed_base.netloc}{href}"
-                        if (
-                            parsed_base.netloc in href
-                            and "/hc/en-gb/" in href
-                            and "/articles/" not in href
-                            and href not in visited
-                        ):
+                            href = f"{parsed_base.scheme}://{base_netloc}{href}"
+                        try:
+                            lp = urlparse(href)
+                            if lp.netloc != base_netloc or lp.scheme not in ("http", "https"):
+                                continue
+                        except Exception:
+                            continue
+                        if href not in visited:
                             crawl_queue.append((href, current_depth + 1))
 
                 if delay_s > 0:
                     await asyncio.sleep(delay_s)
 
-            logger.info("Found %d article link(s) from %s", len(article_links), url)
-
-            # Phase 2: scrape articles
-            articles = []
-            for link in article_links:
-                if delay_s > 0:
-                    await asyncio.sleep(delay_s)
-                try:
-                    await page.goto(link, timeout=timeout_ms, wait_until="domcontentloaded")
-                    soup = BeautifulSoup(await page.content(), "html.parser")
-                    title_el = soup.select_one("h1.article-title, h1")
-                    body_el = soup.select_one(".article-body, article")
-                    if title_el and body_el:
-                        articles.append({
-                            "title": title_el.get_text(strip=True),
-                            "url": link,
-                            "content": body_el.get_text(separator="\n", strip=True)[:max_chars],
-                        })
-                        logger.debug("Scraped: %s", title_el.get_text(strip=True))
-                        if on_progress:
-                            await on_progress(link, "scraped")
-                    else:
-                        logger.warning("Skipped (missing title/body): %s", link)
-                        if on_progress:
-                            await on_progress(link, "failed")
-                except Exception as e:
-                    logger.warning("Failed to scrape %s: %s", link, e)
-                    if on_progress:
-                        await on_progress(link, "failed")
         finally:
             await browser.close()
 
+    logger.info("Scrape done — %d article(s) from %s", len(articles), url)
     return articles
