@@ -1,5 +1,10 @@
 https://chatbot-production-4f99.up.railway.app/
 
+## Documentation
+
+- [User Guide](./USER_GUIDE.md) — How to use the platform (creating bots, managing roles, mistakes, metabot)
+- [Technical Guide](./TECHNICAL_GUIDE.md) — Architecture, schemas, and developer reference
+
 ## Use MetaBot to create a bot via conversation:
 
 <img width="1896" height="941" alt="Screenshot 2026-03-06 001620" src="https://github.com/user-attachments/assets/f32e370a-16db-414f-a6c6-791cd7cd5bc4" />

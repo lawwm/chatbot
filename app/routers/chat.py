@@ -1,7 +1,6 @@
-import asyncio
 import logging
 import uuid
-from fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, BackgroundTasks, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from datetime import datetime
@@ -104,20 +103,28 @@ async def send_message(request: Request, bot_slug: str, message: str = Form(...)
 
 async def _auto_fix_mistake(bot_id: str, mistake_id: str, bot: dict):
     """Background task: suggest fix, detect conflicts, auto-apply or queue for review."""
+    logger.warning("AUTO-FIX START bot=%s mistake=%s auto_fix=%s allow_override=%s",
+                   bot_id, mistake_id, bot.get("auto_fix_enabled"), bot.get("allow_override"))
     try:
         db = get_db()
         mistake = await db.mistakes.find_one({"_id": ObjectId(mistake_id)})
         if not mistake:
+            logger.warning("AUTO-FIX: mistake %s not found, aborting", mistake_id)
             return
 
         current_guidelines = bot.get("additional_guidelines", "")
+        logger.warning("AUTO-FIX: calling suggest_fix for mistake=%s", mistake_id)
         fix = await suggest_fix(
             current_guidelines,
             mistake["customer_message"],
             mistake["bot_response"],
             mistake["complaint"],
         )
+        logger.warning("AUTO-FIX: suggest_fix returned %d chars", len(fix))
+
+        logger.warning("AUTO-FIX: calling merge_guidelines for mistake=%s", mistake_id)
         merge_result = await merge_guidelines(current_guidelines, fix)
+        logger.warning("AUTO-FIX: merge_guidelines has_conflict=%s", merge_result.get("has_conflict"))
 
         allow_override = bot.get("allow_override", False)
 
@@ -142,19 +149,23 @@ async def _auto_fix_mistake(bot_id: str, mistake_id: str, bot: dict):
                 "auto_applied": True,
             })
             await db.mistakes.delete_one({"_id": ObjectId(mistake_id)})
+            logger.warning("AUTO-FIX: applied and archived mistake=%s", mistake_id)
         else:
             # Conflict + override not allowed: save for manual review
             await db.mistakes.update_one(
                 {"_id": ObjectId(mistake_id)},
                 {"$set": {"suggested_fix": fix, "merge_result": merge_result}},
             )
+            logger.warning("AUTO-FIX: conflict detected, saved for manual review mistake=%s conflict=%s",
+                           mistake_id, merge_result.get("conflict_description", ""))
     except Exception as e:
-        logger.error("Auto-fix failed for bot=%s mistake=%s: %s", bot_id, mistake_id, e)
+        logger.error("AUTO-FIX FAILED bot=%s mistake=%s: %s", bot_id, mistake_id, e, exc_info=True)
 
 
 @router.post("/chat/{bot_slug}/report", response_class=HTMLResponse)
 async def report_mistake(
     request: Request,
+    background_tasks: BackgroundTasks,
     bot_slug: str,
     session_id: str = Form(...),
     customer_message: str = Form(...),
@@ -178,7 +189,7 @@ async def report_mistake(
     })
 
     if bot.get("auto_fix_enabled"):
-        asyncio.create_task(_auto_fix_mistake(str(bot["_id"]), str(result.inserted_id), bot))
+        background_tasks.add_task(_auto_fix_mistake, str(bot["_id"]), str(result.inserted_id), bot)
 
     return HTMLResponse("""
         <div class="banner banner-success">

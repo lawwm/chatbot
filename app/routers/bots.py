@@ -91,7 +91,7 @@ async def create_bot(
     name: str = Form(...),
     additional_guidelines: str = Form(DEFAULT_GUIDELINES),
     auto_fix_enabled: str = Form("on"),
-    allow_override: str = Form(None),
+    allow_override: str = Form("on"),
     is_public: str = Form("on"),
     scraper_max_articles: int = Form(30),
     scraper_depth: int = Form(1),
