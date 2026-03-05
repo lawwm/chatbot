@@ -446,7 +446,7 @@ To prevent this, every suggested fix is checked against the current guidelines b
 
 | Category | Tool |
 |---|---|
-| **Backend** | Python 3.11, FastAPI, Uvicorn |
+| **Backend** | Python 3.12, FastAPI, Uvicorn |
 | **Frontend** | Jinja2 (server-side rendering), HTMX, DaisyUI, Tailwind CSS |
 | **Database** | MongoDB Atlas (Motor async driver) |
 | **AI / LLM** | Anthropic Claude API (Haiku for chat & auto-fix, Sonnet for meta-agent) |
@@ -463,7 +463,7 @@ To prevent this, every suggested fix is checked against the current guidelines b
 This project was built using:
 
 - **[Claude Code](https://claude.ai/code)** with **Claude Sonnet 4.6** (primary coding agent) and **Claude Opus** (architecture planning and complex reasoning)
-- **ChatGPT** with **GPT-4.5** (secondary reference and alternative perspectives during design)
+- **ChatGPT** with **GPT-5.2** (secondary reference and alternative perspectives during design)
 - **Visual Studio Code** (editor)
 
 ---
@@ -476,7 +476,13 @@ This project was built using:
 
 **Why server-side rendering over React:** A deliberate choice was made to keep the dashboard UI as minimal as possible and redirect that effort toward the agent interface. The more interesting problem was demonstrating that a conversational Metabot could replace the entire settings, mistakes, and roles UI — and the contrast is intentional. Navigating the dashboard to update guidelines requires opening settings, editing a textarea, and saving. The same task via the Metabot is a single sentence. A heavier frontend would have obscured that comparison and consumed time better spent on the agent loop and tool design.
 
+
+
 **UI responsiveness exceptions:** The minimal-UI goal had two necessary exceptions. First, the **blue pill** indicators: because the agent occasionally describes an action without actually calling the tool (hallucination), a visual signal was needed to confirm that a function was genuinely invoked — not just mentioned. Without it, there would be no reliable way to tell whether the bot actually fetched application status or fabricated a response. Second, the **live scrape progress panel** in the Metabot chat: web scraping is a long-running operation, and leaving the user staring at an idle chat window with no feedback would have made it unclear whether anything was happening. Both additions were driven by the need to surface what the agent was actually doing, not just what it claimed to be doing.
+
+**Claude integration:** Chat uses `claude-haiku-4-5` for low-latency responses. The meta-agent and auto-fix pipeline also use Haiku. The model is called in a tool-use loop — if the model returns `stop_reason: tool_use`, the server executes the requested function and feeds the result back, repeating until `stop_reason: end_turn`. The tool_use response contains the name of the function, and the server uses it to execute a function from a function table.
+
+
 
 **Auth and role system:** A multi-permission role system was added partly as a functional requirement (access control per bot) and partly as a deliberate stress test of the Metabot's tool-handling breadth. Managing roles — creating them, assigning permissions, assigning users, revoking — involves a series of dependent operations that require the agent to correctly sequence multiple internal function calls. This made it a useful benchmark for how well the agent handles a wider surface area of internal tools beyond simple CRUD.
 
