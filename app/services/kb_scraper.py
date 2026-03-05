@@ -196,11 +196,37 @@ async def _scrape(url: str, settings: dict, on_progress=None) -> list[dict]:
 
                 content = ""
                 if body_el:
-                    for tag in body_el.select("nav, header, footer, script, style, noscript"):
+                    # Remove structural/non-content elements by tag
+                    for tag in body_el.select(
+                        "nav, header, footer, script, style, noscript, iframe, svg, "
+                        "[role='navigation'], [role='banner'], [role='contentinfo']"
+                    ):
                         tag.decompose()
+                    # Remove elements whose class/id signals navigation or chrome
+                    _NOISE_PATTERNS = (
+                        "nav", "menu", "header", "footer", "sidebar", "breadcrumb",
+                        "cookie", "banner", "social", "share", "related", "promo",
+                        "ad-", "ads-", "advertisement", "popup", "modal", "overlay",
+                        "language", "lang-", "locale",
+                    )
+                    for tag in body_el.find_all(True):
+                        cls = " ".join(tag.get("class", [])).lower()
+                        tid = (tag.get("id") or "").lower()
+                        if any(p in cls or p in tid for p in _NOISE_PATTERNS):
+                            tag.decompose()
+
                     raw = body_el.get_text(separator="\n", strip=True)
-                    content = "\n".join(line for line in raw.splitlines() if line.strip())
-                    content = content[:max_chars]
+                    # Deduplicate consecutive identical lines and collapse blanks
+                    seen, lines = set(), []
+                    for line in raw.splitlines():
+                        line = line.strip()
+                        if not line:
+                            continue
+                        if line in seen:
+                            continue
+                        seen.add(line)
+                        lines.append(line)
+                    content = "\n".join(lines)[:max_chars]
 
                 if len(content) > 100:
                     articles.append({"title": title, "url": current_url, "content": content})

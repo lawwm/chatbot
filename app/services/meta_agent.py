@@ -280,6 +280,20 @@ TOOLS = [
             "required": ["name"],
         },
     },
+    {
+        "name": "delete_bot",
+        "description": "Permanently delete a bot and ALL its associated data (settings, KB content, vectors, conversations, mistakes, roles). This is irreversible. Always confirm with the user before calling this tool.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "bot_id": {
+                    "type": "string",
+                    "description": "The bot's MongoDB ObjectId string.",
+                },
+            },
+            "required": ["bot_id"],
+        },
+    },
 ]
 
 
@@ -711,6 +725,32 @@ async def _tool_create_bot(inp: dict, user_id: str) -> str:
     return f"Bot '{name}' created (id: {bot_id}, slug: {slug}).{scrape_note}"
 
 
+async def _tool_delete_bot(inp: dict, user_id: str) -> str:
+    bot_id = inp.get("bot_id", "").strip()
+    if not bot_id:
+        return "bot_id is required."
+    db = get_db()
+    bot = await db.bots.find_one({"_id": ObjectId(bot_id)})
+    if not bot:
+        return f"No bot found with id '{bot_id}'."
+    bot_name = bot.get("name", bot_id)
+    # Delete all associated data
+    await db.bots.delete_one({"_id": ObjectId(bot_id)})
+    await db.kb_content.delete_many({"bot_id": bot_id})
+    await db.kb_vectors.delete_many({"bot_id": bot_id})
+    await db.conversations.delete_many({"bot_id": bot_id})
+    await db.mistakes.delete_many({"bot_id": bot_id})
+    await db.mistakes_archive.delete_many({"bot_id": bot_id})
+    # Delete roles and assignments
+    roles = await db.roles.find({"bot_id": bot_id}).to_list(None)
+    role_ids = [str(r["_id"]) for r in roles]
+    if role_ids:
+        await db.user_roles.delete_many({"role_id": {"$in": role_ids}})
+    await db.roles.delete_many({"bot_id": bot_id})
+    await db.user_roles.delete_many({"bot_id": bot_id})
+    return f"Bot '{bot_name}' (id: {bot_id}) and all associated data have been permanently deleted."
+
+
 # ---------------------------------------------------------------------------
 # Tool dispatch
 # ---------------------------------------------------------------------------
@@ -730,6 +770,7 @@ _TOOL_MAP = {
     "delete_role": _tool_delete_role,
     "revoke_role": _tool_revoke_role,
     "create_bot": _tool_create_bot,
+    "delete_bot": _tool_delete_bot,
 }
 
 
