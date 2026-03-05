@@ -1,16 +1,25 @@
 {% extends "base.html" %}
+{% from "partials/banners.html" import success, error, warning %}
+{% from "partials/buttons.html" import primary, danger, secondary %}
 {% block title %}{{ bot.name }} — Roles{% endblock %}
 {% block content %}
+
+{% if request.query_params.get('created') %}{{ success("Role created successfully.") }}{% endif %}
+{% if request.query_params.get('assigned') %}{{ success("Role assigned successfully.") }}{% endif %}
+{% if request.query_params.get('updated') %}{{ success("Role permissions updated.") }}{% endif %}
+{% if request.query_params.get('revoked') %}{{ warning("Role revoked.", auto_close=10000) }}{% endif %}
+{% if request.query_params.get('deleted') %}{{ warning("Role deleted.", auto_close=10000) }}{% endif %}
 <div class="page-header">
     <div>
         <h1>{{ bot.name }}</h1>
         <p class="text-muted">Roles</p>
     </div>
     <div class="flex gap-1">
-        <a href="/dashboard/bots/{{ bot._id }}/settings" class="btn btn-secondary">Back to Settings</a>
+        {{ secondary("Back to Settings", href="/dashboard/bots/" ~ bot._id ~ "/settings") }}
     </div>
 </div>
 
+{% if can_manage %}
 <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
 
     <!-- Create Role -->
@@ -30,7 +39,7 @@
                 {% endfor %}
             </div>
             <input type="hidden" name="permission_bitmap" id="bitmap_hidden">
-            <button type="submit" class="btn btn-primary">Create Role</button>
+            {{ primary("Create Role") }}
         </form>
     </div>
 
@@ -54,10 +63,11 @@
                     {% endfor %}
                 </select>
             </div>
-            <button type="submit" class="btn btn-primary">Assign</button>
+            {{ primary("Assign") }}
         </form>
     </div>
 </div>
+{% endif %}
 
 <!-- Existing Roles -->
 <div class="card mt-3">
@@ -66,21 +76,48 @@
     <p class="text-muted">No roles created yet.</p>
     {% else %}
     <table class="table">
-        <thead><tr><th>Name</th><th>Permissions</th></tr></thead>
+        <thead><tr><th style="width:160px">Name</th><th>Permissions</th>{% if can_manage %}<th style="width:160px"></th>{% endif %}</tr></thead>
         <tbody>
         {% for role in roles %}
-        <tr>
-            <td>{{ role.name }}</td>
+        <tr id="role-row-{{ role._id }}">
+            <td style="vertical-align:top; padding-top:0.85rem;">{{ role.name }}</td>
             <td>
-                {% set has_any = [] %}
-                {% for value, label in all_permissions %}
-                    {% if role.permission_bitmap | bitwise_and(value) %}
-                    <span class="badge badge-open">{{ label }}</span>
-                    {% set _ = has_any.append(1) %}
-                    {% endif %}
-                {% endfor %}
-                {% if not has_any %}<span class="text-muted">No permissions</span>{% endif %}
+                {% if can_manage %}
+                <form method="post" action="/dashboard/bots/{{ bot._id }}/roles/{{ role._id }}/update"
+                      id="role-form-{{ role._id }}" onsubmit="computeBitmap('{{ role._id }}'); return true;">
+                    <div style="display:flex; flex-wrap:wrap; gap:0.35rem;">
+                        {% for value, label in all_permissions %}
+                        <label class="perm-badge {% if role.permission_bitmap | bitwise_and(value) %}is-active{% endif %}"
+                               id="badge-{{ role._id }}-{{ value }}">
+                            <input type="checkbox" name="perm_{{ value }}" value="{{ value }}"
+                                   {% if role.permission_bitmap | bitwise_and(value) %}checked{% endif %}
+                                   onchange="onPermChange('{{ role._id }}')">
+                            {{ label }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="permission_bitmap" id="bitmap-{{ role._id }}">
+                </form>
+                {% else %}
+                <div style="display:flex; flex-wrap:wrap; gap:0.35rem;">
+                    {% set has_any = [] %}
+                    {% for value, label in all_permissions %}
+                        {% if role.permission_bitmap | bitwise_and(value) %}
+                        <span class="badge badge-open">{{ label }}</span>
+                        {% set _ = has_any.append(1) %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if not has_any %}<span class="text-muted">No permissions</span>{% endif %}
+                </div>
+                {% endif %}
             </td>
+            {% if can_manage %}
+            <td style="vertical-align:top; padding-top:0.6rem; text-align:right;" id="role-actions-{{ role._id }}">
+                <form method="post" action="/dashboard/bots/{{ bot._id }}/roles/{{ role._id }}/delete" id="delete-form-{{ role._id }}" style="display:inline;">
+                    {{ danger("Delete", confirm_msg="Delete role " ~ role.name ~ "? This cannot be undone.") }}
+                </form>
+            </td>
+            {% endif %}
         </tr>
         {% endfor %}
         </tbody>
@@ -111,9 +148,11 @@
                 {% for r in roles %}{% if r._id == ur.role_id %}{{ r.name }}{% endif %}{% endfor %}
             </td>
             <td>
+                {% if can_manage %}
                 <form method="post" action="/dashboard/bots/{{ bot._id }}/roles/revoke/{{ ur._id }}">
-                    <button type="submit" class="btn btn-link" style="color:var(--danger)">Revoke</button>
+                    {{ danger("Revoke") }}
                 </form>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}
@@ -123,12 +162,72 @@
 </div>
 
 <script>
-document.getElementById('create-role-form').addEventListener('submit', function () {
-    let bitmap = 0;
-    this.querySelectorAll('input[type=checkbox][name^=perm_]').forEach(cb => {
+// Create role form bitmap
+var createForm = document.getElementById('create-role-form');
+if (createForm) {
+    createForm.addEventListener('submit', function () {
+        let bitmap = 0;
+        this.querySelectorAll('input[type=checkbox][name^=perm_]').forEach(cb => {
+            if (cb.checked) bitmap |= parseInt(cb.value);
+        });
+        this.querySelector('[name=permission_bitmap]').value = bitmap;
+    });
+}
+
+// Inline role editing
+var originalBitmaps = {
+    {% for role in roles %}
+    '{{ role._id }}': {{ role.permission_bitmap }}{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+function onPermChange(roleId) {
+    var form = document.getElementById('role-form-' + roleId);
+    // Update badge appearance
+    form.querySelectorAll('.perm-badge').forEach(function(label) {
+        var cb = label.querySelector('input[type=checkbox]');
+        label.classList.toggle('is-active', cb.checked);
+    });
+    // Compute current bitmap
+    var current = 0;
+    form.querySelectorAll('input[type=checkbox][name^=perm_]').forEach(function(cb) {
+        if (cb.checked) current |= parseInt(cb.value);
+    });
+    var actionsEl = document.getElementById('role-actions-' + roleId);
+    var isDirty = current !== originalBitmaps[roleId];
+    if (isDirty && !actionsEl.querySelector('.save-btn')) {
+        actionsEl.innerHTML =
+            '<div style="display:flex;gap:0.4rem;justify-content:flex-end;">' +
+            '<button type="button" class="btn btn-secondary" onclick="cancelPermEdit(\'' + roleId + '\')">Cancel</button>' +
+            '<button type="submit" form="role-form-' + roleId + '" class="btn btn-primary save-btn" onclick="computeBitmap(\'' + roleId + '\')">Save</button>' +
+            '</div>';
+    } else if (!isDirty) {
+        var deleteForm = document.getElementById('delete-form-' + roleId);
+        actionsEl.innerHTML = '';
+        if (deleteForm) actionsEl.appendChild(deleteForm);
+    }
+}
+
+function computeBitmap(roleId) {
+    var form = document.getElementById('role-form-' + roleId);
+    var bitmap = 0;
+    form.querySelectorAll('input[type=checkbox][name^=perm_]').forEach(function(cb) {
         if (cb.checked) bitmap |= parseInt(cb.value);
     });
-    this.querySelector('[name=permission_bitmap]').value = bitmap;
-});
+    document.getElementById('bitmap-' + roleId).value = bitmap;
+}
+
+function cancelPermEdit(roleId) {
+    var form = document.getElementById('role-form-' + roleId);
+    var original = originalBitmaps[roleId];
+    form.querySelectorAll('input[type=checkbox][name^=perm_]').forEach(function(cb) {
+        cb.checked = !!(original & parseInt(cb.value));
+        cb.closest('.perm-badge').classList.toggle('is-active', cb.checked);
+    });
+    var actionsEl = document.getElementById('role-actions-' + roleId);
+    var deleteForm = document.getElementById('delete-form-' + roleId);
+    actionsEl.innerHTML = '';
+    if (deleteForm) actionsEl.appendChild(deleteForm);
+}
 </script>
 {% endblock %}

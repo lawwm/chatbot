@@ -19,7 +19,9 @@ async def roles_page(request: Request, bot_id: str, user: dict = Depends(require
     db = get_db()
     bitmap = await get_user_permission_bitmap(str(user["_id"]), bot_id)
     is_creator = user.get("allow_create_agent")
-    if not is_creator and not (bitmap & Permission.MANAGE_ROLES):
+    can_manage = is_creator or bool(bitmap & Permission.MANAGE_ROLES)
+    can_view = can_manage or bool(bitmap & Permission.VIEW_SETTINGS)
+    if not can_view:
         return RedirectResponse(f"/dashboard/bots/{bot_id}/settings", status_code=302)
 
     bot = await db.bots.find_one({"_id": ObjectId(bot_id)})
@@ -45,6 +47,7 @@ async def roles_page(request: Request, bot_id: str, user: dict = Depends(require
         "request": request, "user": user, "bot": bot,
         "roles": roles, "users": users, "user_roles": user_roles,
         "all_permissions": all_permissions,
+        "can_manage": can_manage,
     })
 
 
@@ -64,7 +67,7 @@ async def create_role(
         "created_by": str(user["_id"]),
         "created_at": datetime.utcnow(),
     })
-    return RedirectResponse(f"/dashboard/bots/{bot_id}/roles", status_code=302)
+    return RedirectResponse(f"/dashboard/bots/{bot_id}/roles?created=1", status_code=302)
 
 
 @router.post("/assign")
@@ -85,7 +88,44 @@ async def assign_role(
             "granted_by": str(granting_user["_id"]),
             "created_at": datetime.utcnow(),
         })
-    return RedirectResponse(f"/dashboard/bots/{bot_id}/roles", status_code=302)
+    return RedirectResponse(f"/dashboard/bots/{bot_id}/roles?assigned=1", status_code=302)
+
+
+@router.post("/{role_id}/update")
+async def update_role(
+    request: Request,
+    bot_id: str,
+    role_id: str,
+    permission_bitmap: int = Form(0),
+    user: dict = Depends(require_auth),
+):
+    db = get_db()
+    bitmap = await get_user_permission_bitmap(str(user["_id"]), bot_id)
+    is_creator = user.get("allow_create_agent")
+    if not is_creator and not (bitmap & Permission.MANAGE_ROLES):
+        return RedirectResponse(f"/dashboard/bots/{bot_id}/roles", status_code=302)
+    await db.roles.update_one(
+        {"_id": ObjectId(role_id)},
+        {"$set": {"permission_bitmap": permission_bitmap}}
+    )
+    return RedirectResponse(f"/dashboard/bots/{bot_id}/roles?updated=1", status_code=302)
+
+
+@router.post("/{role_id}/delete")
+async def delete_role(
+    request: Request,
+    bot_id: str,
+    role_id: str,
+    user: dict = Depends(require_auth),
+):
+    db = get_db()
+    bitmap = await get_user_permission_bitmap(str(user["_id"]), bot_id)
+    is_creator = user.get("allow_create_agent")
+    if not is_creator and not (bitmap & Permission.MANAGE_ROLES):
+        return RedirectResponse(f"/dashboard/bots/{bot_id}/roles", status_code=302)
+    await db.roles.delete_one({"_id": ObjectId(role_id)})
+    await db.user_roles.delete_many({"role_id": role_id, "bot_id": bot_id})
+    return RedirectResponse(f"/dashboard/bots/{bot_id}/roles?deleted=1", status_code=302)
 
 
 @router.post("/revoke/{user_role_id}")
@@ -97,4 +137,4 @@ async def revoke_role(
 ):
     db = get_db()
     await db.user_roles.delete_one({"_id": ObjectId(user_role_id)})
-    return RedirectResponse(f"/dashboard/bots/{bot_id}/roles", status_code=302)
+    return RedirectResponse(f"/dashboard/bots/{bot_id}/roles?revoked=1", status_code=302)

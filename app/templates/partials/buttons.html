@@ -1,0 +1,45 @@
+{# ---------------------------------------------------------------
+   Button macros — import with:
+   {% from "partials/buttons.html" import primary, danger, secondary %}
+--------------------------------------------------------------- #}
+
+{% macro primary(label, type="submit", form=None, disabled=False, onclick=None, extra_style="") %}
+<button type="{{ type }}"
+    class="btn btn-primary"
+    {% if form %}form="{{ form }}"{% endif %}
+    {% if disabled %}disabled{% endif %}
+    {% if onclick %}onclick="{{ onclick }}"{% endif %}
+    {% if extra_style %}style="{{ extra_style }}"{% endif %}
+>{{ label }}</button>
+{% endmacro %}
+
+
+{% macro danger(label, type="submit", form=None, disabled=False, confirm_msg=None, extra_style="") %}
+<button type="{{ type }}"
+    class="btn btn-danger"
+    {% if form %}form="{{ form }}"{% endif %}
+    {% if disabled %}disabled{% endif %}
+    {% if confirm_msg %}onclick="return confirm('{{ confirm_msg }}')"{% endif %}
+    {% if extra_style %}style="{{ extra_style }}"{% endif %}
+>{{ label }}</button>
+{% endmacro %}
+
+
+{% macro secondary(label, type="button", href=None, form=None, disabled=False, onclick=None, target=None, extra_style="") %}
+{% if href %}
+<a href="{{ href }}"
+    class="btn btn-secondary{% if disabled %} disabled{% endif %}"
+    {% if disabled %}aria-disabled="true" onclick="return false"{% elif onclick %}onclick="{{ onclick }}"{% endif %}
+    {% if target %}target="{{ target }}"{% endif %}
+    {% if extra_style %}style="{{ extra_style }}"{% endif %}
+>{{ label }}</a>
+{% else %}
+<button type="{{ type }}"
+    class="btn btn-secondary"
+    {% if form %}form="{{ form }}"{% endif %}
+    {% if disabled %}disabled{% endif %}
+    {% if onclick %}onclick="{{ onclick }}"{% endif %}
+    {% if extra_style %}style="{{ extra_style }}"{% endif %}
+>{{ label }}</button>
+{% endif %}
+{% endmacro %}

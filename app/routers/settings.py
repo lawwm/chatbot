@@ -110,7 +110,6 @@ async def update_settings(
     kb_urls = [u.strip() for u in form_data.getlist("kb_url") if u.strip()]
 
     updates = {"updated_at": datetime.utcnow()}
-    trigger_scrape = False
 
     if name is not None and is_creator:
         updates["name"] = name
@@ -128,7 +127,6 @@ async def update_settings(
     if kb_urls and (is_creator or bitmap & Permission.EDIT_KB_URL):
         updates["kb_urls"] = kb_urls
         updates["kb_url"] = kb_urls[0]
-        trigger_scrape = True
 
     if additional_guidelines is not None and (is_creator or bitmap & Permission.EDIT_GUIDELINES):
         updates["additional_guidelines"] = additional_guidelines
@@ -141,22 +139,33 @@ async def update_settings(
         updates["is_public"] = is_public == "on"
 
     await db.bots.update_one({"_id": ObjectId(bot_id)}, {"$set": updates})
-
-    if trigger_scrape:
-        scraper_settings = bot.get("scraper_settings")
-        scrape_progress.start(bot_id)
-
-        async def _run_scrape():
-            try:
-                await scrape_and_store(bot_id, kb_urls, scraper_settings)
-            except Exception as e:
-                logger.error("Background scrape failed for bot=%s: %s", bot_id, e)
-                await scrape_progress.finish(bot_id, article_count=0)
-
-        asyncio.create_task(_run_scrape())
-        return RedirectResponse(f"/dashboard/bots/{bot_id}/settings?scraping=1", status_code=302)
-
     return RedirectResponse(f"/dashboard/bots/{bot_id}/settings?saved=1", status_code=302)
+
+
+@router.post("/dashboard/bots/{bot_id}/repopulate")
+async def repopulate_kb(request: Request, bot_id: str, user: dict = Depends(require_auth)):
+    bot = await get_bot_or_404(bot_id)
+    if not bot:
+        return RedirectResponse("/dashboard", status_code=302)
+    user_id = str(user["_id"])
+    bitmap = await get_user_permission_bitmap(user_id, bot_id)
+    is_creator = await has_creation_role(user)
+    if not (is_creator or bitmap & Permission.EDIT_KB_URL):
+        return RedirectResponse(f"/dashboard/bots/{bot_id}/settings", status_code=302)
+
+    kb_urls = bot.get("kb_urls") or ([bot["kb_url"]] if bot.get("kb_url") else [])
+    scraper_settings = bot.get("scraper_settings")
+    scrape_progress.start(bot_id)
+
+    async def _run_scrape():
+        try:
+            await scrape_and_store(bot_id, kb_urls, scraper_settings)
+        except Exception as e:
+            logger.error("Repopulate failed for bot=%s: %s", bot_id, e)
+            await scrape_progress.finish(bot_id, article_count=0)
+
+    asyncio.create_task(_run_scrape())
+    return RedirectResponse(f"/dashboard/bots/{bot_id}/settings?scraping=1", status_code=302)
 
 
 @router.get("/dashboard/bots/{bot_id}/scrape-stream")

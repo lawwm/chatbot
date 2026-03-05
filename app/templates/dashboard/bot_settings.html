@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% from "partials/banners.html" import success %}
+{% from "partials/buttons.html" import primary, danger, secondary %}
 {% block title %}{{ bot.name }} — Settings{% endblock %}
 {% block head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css">
@@ -41,13 +43,16 @@
     </div>
     <div class="flex gap-1" id="page-actions">
         {% set scraping_now = request.query_params.get('scraping') or scraping %}
+        {% if permissions.review_mistakes %}
         <a href="/dashboard/bots/{{ bot._id }}/mistakes" class="btn btn-secondary{% if scraping_now %} disabled{% endif %}" {% if scraping_now %}aria-disabled="true" onclick="return false"{% endif %}>Mistakes</a>
-        <a href="/dashboard/bots/{{ bot._id }}/roles" class="btn btn-secondary{% if scraping_now %} disabled{% endif %}" {% if scraping_now %}aria-disabled="true" onclick="return false"{% endif %}>Roles</a>
-        <a href="/chat/{{ bot.slug }}" class="btn btn-secondary{% if scraping_now %} disabled{% endif %}" {% if scraping_now %}aria-disabled="true" onclick="return false"{% endif %} target="_blank">Open Chat</a>
-        <a href="/dashboard" class="btn btn-secondary{% if scraping_now %} disabled{% endif %}" {% if scraping_now %}aria-disabled="true" onclick="return false"{% endif %}>Back</a>
+        {% endif %}
+        {% if permissions.manage_roles %}
+        {{ secondary("Roles", href="/dashboard/bots/" ~ bot._id ~ "/roles", disabled=scraping_now) }}
+        {% endif %}
+        {{ secondary("Open Chat", href="/chat/" ~ bot.slug, disabled=scraping_now, target="_blank") }}
+        {{ secondary("Back", href="/dashboard", disabled=scraping_now) }}
         {% if can_delete %}
-        <button type="submit" form="delete-form" id="delete-btn" class="btn btn-danger" {% if scraping_now %}disabled{% endif %}
-            onclick="return confirm('Delete {{ bot.name }}? This cannot be undone.')">Delete Bot</button>
+        {{ danger("Delete Bot", form="delete-form", disabled=scraping_now, confirm_msg="Delete " ~ bot.name ~ "? This cannot be undone.") }}
         {% endif %}
     </div>
 </div>
@@ -56,9 +61,7 @@
 <form id="delete-form" method="post" action="/dashboard/bots/{{ bot._id }}/delete"></form>
 {% endif %}
 
-{% if request.query_params.get('saved') %}
-<div class="alert alert-success">Settings saved.</div>
-{% endif %}
+{% if request.query_params.get('saved') %}{{ success("Settings saved successfully.", id="saved-banner") }}{% endif %}
 
 <div class="card" style="max-width: 700px;">
     <form method="post" action="/dashboard/bots/{{ bot._id }}/settings">
@@ -212,12 +215,17 @@
             </div>
         </details>
 
-        <button type="submit" id="save-btn" class="btn btn-primary"
-            {% if (not permissions.edit_kb_url and not permissions.edit_guidelines and not permissions.toggle_autofix) or (request.query_params.get('scraping') or scraping) %}
-            disabled{% endif %}>
-            Save Settings
-        </button>
+        <div class="flex gap-1" style="margin-top:0.25rem;">
+            {% set save_disabled = (not permissions.edit_kb_url and not permissions.edit_guidelines and not permissions.toggle_autofix) or (request.query_params.get('scraping') or scraping) %}
+            {{ primary("Save Settings", disabled=save_disabled) }}
+            {% if permissions.edit_kb_url %}
+            {{ secondary("Repopulate Knowledge Base", type="submit", form="repopulate-form", disabled=request.query_params.get('scraping') or scraping) }}
+            {% endif %}
+        </div>
     </form>
+    {% if permissions.edit_kb_url %}
+    <form id="repopulate-form" method="post" action="/dashboard/bots/{{ bot._id }}/repopulate"></form>
+    {% endif %}
 </div>
 
 <div id="kb-status" data-theme="light" style="max-width:700px; margin-top:0.75rem; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; font-family:inherit;">

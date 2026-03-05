@@ -81,6 +81,12 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .badge-open { background: #fef3c7; color: #92400e; }
 .badge-fixed { background: #d1fae5; color: #065f46; }
 
+/* Toggleable permission badge */
+.perm-badge { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; cursor: pointer; user-select: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--surface); transition: border-color 0.15s, color 0.15s, background 0.15s; }
+.perm-badge input[type=checkbox] { display: none; }
+.perm-badge.is-active { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.perm-badge:hover { border-color: var(--primary); color: var(--primary); }
+
 /* Chat */
 /* Chat layout */
 .chat-wrapper { display: flex; flex-direction: column; height: calc(100vh - 56px); }
@@ -185,3 +191,14 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 /* Tippy dark theme override */
 .tippy-box[data-theme~='dark-custom'] { background:#1e293b; color:#f8fafc; font-size:0.78rem; border-radius:6px; border:1px solid #334155; }
 .tippy-box[data-theme~='dark-custom'] .tippy-arrow::before { border-top-color:#334155; }
+
+/* Banners */
+.banner { display:flex; align-items:center; gap:0.75rem; padding:0.75rem 1rem; border-radius:var(--radius); margin-bottom:1rem; font-size:0.875rem; font-weight:500; }
+.banner-success { background:#16a34a; color:#fff; }
+.banner-error { background:#dc2626; color:#fff; }
+.banner-warning { background:#d97706; color:#fff; }
+.banner-loading { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+.banner-msg { flex:1; }
+.banner-close { background:none; border:none; cursor:pointer; color:inherit; opacity:0.7; padding:0; display:inline-flex; align-items:center; flex-shrink:0; }
+.banner-close:hover { opacity:1; }
+.banner-spinner { width:16px; height:16px; border:2px solid rgba(0,0,0,0.15); border-top-color:var(--primary); border-radius:50%; animation:spin 0.7s linear infinite; flex-shrink:0; }
