@@ -386,7 +386,48 @@ Each bot can be set to **public** (anyone with the link can chat) or **private**
 ---
 
 ### Details
-Sometimes the agent hallucinates web scraping, but the blue pill for tooling will only appear if web scraping did actually happen. You can keep prompting the MetaBot until you are sure it actually did start the web scraping.
+
+#### Metabot Tool Call Verification
+
+Sometimes the Metabot hallucinates web scraping — it may describe the action without actually performing it. The blue pill indicator is the ground truth: it only appears when the tool was genuinely called. If you don't see the pill, the action did not happen. Keep prompting the Metabot until the pill confirms it ran.
 
 <img width="1883" height="931" alt="image" src="https://github.com/user-attachments/assets/a648fdd1-ccbc-4610-a548-8abdcd03a9a0" />
+
+---
+
+#### Conflict Detection and the Override Checkbox
+
+**Why this exists**
+
+When a customer reports a mistake, the AI suggests a fix by rewriting the bot's guidelines. But the existing guidelines may already contain an instruction that directly contradicts the new fix — for example, the current guidelines say *"always respond formally"* and the suggested fix says *"respond casually for billing questions"*. Blindly overwriting would silently break an existing rule the manager deliberately set.
+
+To prevent this, every suggested fix is checked against the current guidelines before being applied. If a contradiction is found, the system flags it as a **conflict** and gives the manager a choice rather than applying the fix automatically.
+
+**The two settings that control this (in Bot Settings):**
+
+| Setting | Behaviour |
+|---|---|
+| **Enable Auto-Fix** | When a customer reports a mistake, the AI automatically analyzes it and attempts to apply a fix without any manager action. |
+| **Allow Override on Conflict** | If a conflict is detected during auto-fix, apply the new fix anyway (override the conflicting rule). If unchecked, conflicts are held for manual review instead. |
+
+<!-- SCREENSHOT: Settings page showing the Enable Auto-Fix and Allow Override on Conflict checkboxes -->
+
+**Manual review flow (when auto-fix is off, or conflict is held):**
+
+1. Go to **Dashboard → (Bot) → Mistakes**.
+2. Click **Analyze & Suggest Fix** on an open mistake.
+3. The AI analyzes the mistake and checks for conflicts with the current guidelines.
+
+**No conflict:** A single editable text area appears with the fully merged guidelines. Edit if needed, then click **Apply Fix & Archive**.
+
+<!-- SCREENSHOT: Mistakes page showing the no-conflict suggested fix text area -->
+
+**Conflict detected:** Two options are shown side by side — the manager chooses which version of the guidelines to keep:
+
+- **Use Existing** — keep the current guidelines as-is; the suggested fix is discarded.
+- **Apply Fix** — the new fix takes precedence; the conflicting existing rule is overridden.
+
+A description of exactly what conflicts explains why the two versions diverge, so the manager can make an informed decision.
+
+<!-- SCREENSHOT: Mistakes page showing the conflict view with "Use Existing" and "Apply Fix" side by side -->
 
