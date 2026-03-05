@@ -94,12 +94,12 @@ async def meta_send(
         })
 
     try:
-        assistant_text, tool_names = await run_agent(user_id, conv_id, message)
+        assistant_text, tool_calls = await run_agent(user_id, conv_id, message)
     except Exception as e:
         import logging
         logging.getLogger(__name__).error("meta_agent error: %s", e)
         assistant_text = f"Sorry, something went wrong: {e}"
-        tool_names = []
+        tool_calls = []
 
     conv_title = "New chat"
     if is_new:
@@ -113,7 +113,7 @@ async def meta_send(
         "is_new": is_new,
         "conv_id": conv_id,
         "conv_title": conv_title,
-        "tool_names": tool_names,
+        "tool_calls": tool_calls,
     })
     if is_new:
         resp.headers["HX-Push-Url"] = f"/meta/{conv_id}"

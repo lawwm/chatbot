@@ -642,9 +642,9 @@ async def _tool_create_bot(inp: dict, user_id: str) -> str:
         "kb_urls": kb_urls,
         "scraper_settings": scraper_settings,
         "additional_guidelines": guidelines,
-        "auto_fix_enabled": False,
+        "auto_fix_enabled": True,
         "allow_override": False,
-        "is_public": False,
+        "is_public": True,
         "system_prompt": "",
         "created_by": user_id,
         "created_at": datetime.utcnow(),
@@ -758,8 +758,8 @@ async def _dispatch_tool(name: str, inp: dict, user_id: str) -> str:
 # Agent loop
 # ---------------------------------------------------------------------------
 
-async def run_agent(user_id: str, conv_id: str, user_message: str) -> tuple[str, list[str]]:
-    """Run the meta-agent for one user turn. Returns (assistant_text, tool_names_called)."""
+async def run_agent(user_id: str, conv_id: str, user_message: str) -> tuple[str, list[dict]]:
+    """Run the meta-agent for one user turn. Returns (assistant_text, tool_calls_made)."""
     db = get_db()
 
     # Load stored conversation (text turns only)
@@ -779,7 +779,7 @@ async def run_agent(user_id: str, conv_id: str, user_message: str) -> tuple[str,
     api_messages: list = [{"role": m["role"], "content": m["content"]} for m in stored_messages]
 
     assistant_text = "I'm sorry, I couldn't process that request."
-    tool_names: list[str] = []
+    tool_calls_made: list[dict] = []
 
     while True:
         response = await asyncio.to_thread(
@@ -802,7 +802,7 @@ async def run_agent(user_id: str, conv_id: str, user_message: str) -> tuple[str,
             tool_results = []
             for block in response.content:
                 if block.type == "tool_use":
-                    tool_names.append(block.name)
+                    tool_calls_made.append({"name": block.name, "input": dict(block.input)})
                     result = await _dispatch_tool(block.name, block.input, user_id)
                     tool_results.append({
                         "type": "tool_result",
@@ -836,4 +836,4 @@ async def run_agent(user_id: str, conv_id: str, user_message: str) -> tuple[str,
         upsert=True,
     )
 
-    return assistant_text, tool_names
+    return assistant_text, tool_calls_made

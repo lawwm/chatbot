@@ -1,15 +1,81 @@
-{% if tool_names %}
+{% if tool_calls %}
 <div class="chat chat-start">
     <div style="display:flex; flex-direction:column; gap:0.3rem;">
-        {% for name in tool_names %}
+        {% for tc in tool_calls %}
         <div style="display:inline-flex; align-items:center; gap:0.5rem; background:#f0f4ff; border:1px solid #c7d7fd; border-radius:999px; padding:0.25rem 0.85rem; font-size:0.72rem; color:#3b5bdb; width:fit-content; font-family:monospace;">
             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            Calling tool {{ name }}
+            Calling tool {{ tc.name }}
         </div>
         {% endfor %}
     </div>
 </div>
 {% endif %}
+
+{% for tc in tool_calls %}
+{% if tc.name == "trigger_scrape" and tc.input.bot_id %}
+<div class="chat chat-start" id="meta-scrape-box-{{ tc.input.bot_id }}">
+    <div style="background:var(--surface,#f9fafb); border:1px solid var(--border,#e5e7eb); border-radius:0.6rem; padding:0.75rem 1rem; font-size:0.78rem; color:var(--text-muted,#6b7280); width:100%; max-width:420px;">
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem; font-weight:600; color:var(--text,#111);">
+            <span class="loading loading-spinner loading-xs" id="meta-scrape-spinner-{{ tc.input.bot_id }}" style="flex-shrink:0;"></span>
+            Scraping knowledge base…
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+            <span id="meta-scrape-counts-{{ tc.input.bot_id }}" style="flex-shrink:0; color:var(--text-muted,#6b7280);">0 scraped · 0 visited</span>
+            <span style="color:var(--border,#d1d5db);">·</span>
+            <span id="meta-scrape-url-{{ tc.input.bot_id }}" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#facc15;">Connecting…</span>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var botId = {{ tc.input.bot_id | tojson }};
+    var scraped = 0, visited = 0;
+    var countEl = document.getElementById('meta-scrape-counts-' + botId);
+    var urlEl   = document.getElementById('meta-scrape-url-'    + botId);
+    var spinner = document.getElementById('meta-scrape-spinner-' + botId);
+    var box     = document.getElementById('meta-scrape-box-'    + botId);
+
+    var COLORS = { visiting: '#facc15', scraped: '#4ade80', failed: '#f87171' };
+
+    var es = new EventSource('/dashboard/bots/' + botId + '/scrape-stream');
+
+    es.onmessage = function (e) {
+        var data = e.data;
+
+        if (data.startsWith('__done__')) {
+            es.close();
+            var count = parseInt(data.replace('__done__', '')) || scraped;
+            if (spinner) spinner.remove();
+            if (countEl) countEl.textContent = count + ' article' + (count !== 1 ? 's' : '') + ' scraped';
+            if (urlEl)   { urlEl.textContent = 'Done'; urlEl.style.color = '#4ade80'; }
+            return;
+        }
+
+        var sep = data.indexOf('|');
+        var statusType = data.substring(0, sep);
+        var url = data.substring(sep + 1);
+
+        if (statusType === 'scraped') scraped++;
+        visited++;
+
+        if (countEl) countEl.textContent = scraped + ' scraped · ' + visited + ' visited';
+        if (urlEl) {
+            var path = url.replace(/^https?:\/\/[^/]+/, '') || url;
+            urlEl.textContent = path;
+            urlEl.style.color = COLORS[statusType] || '#6b7280';
+        }
+    };
+
+    es.onerror = function () {
+        es.close();
+        if (urlEl) { urlEl.textContent = 'Connection lost'; urlEl.style.color = '#f87171'; }
+        if (spinner) spinner.remove();
+    };
+})();
+</script>
+{% endif %}
+{% endfor %}
+
 <!-- Assistant bubble -->
 <div class="chat chat-start">
     <div class="chat-bubble text-sm leading-relaxed !bg-gray-100 !text-gray-900 md-content">{{ render_markdown(assistant_message) }}</div>
