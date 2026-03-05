@@ -74,7 +74,7 @@ async def send_message(request: Request, bot_slug: str, message: str = Form(...)
         kb_content = await get_kb_content(str(bot["_id"]), kb_urls, bot.get("scraper_settings"))
 
     # Call Claude
-    assistant_text = await claude_chat(messages, kb_content, bot.get("additional_guidelines", ""))
+    assistant_text, tool_calls = await claude_chat(messages, kb_content, bot.get("additional_guidelines", ""))
 
     # Add assistant message
     assistant_msg = {"role": "assistant", "content": assistant_text, "timestamp": datetime.utcnow()}
@@ -95,6 +95,7 @@ async def send_message(request: Request, bot_slug: str, message: str = Form(...)
         "user_message": user_msg,
         "render_markdown": render_markdown,
         "assistant_message": assistant_msg,
+        "tool_calls": tool_calls,
     })
 
 

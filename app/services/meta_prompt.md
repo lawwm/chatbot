@@ -62,6 +62,29 @@ of all their assigned roles' bitmaps.
 
 ---
 
+## Customer Bot — Tools Available to Bots
+
+Each customer-facing bot has access to two tools. When configuring guidelines, always include
+clear instructions telling the bot when to call these tools.
+
+### `get_application_status`
+Looks up a customer's card application status.
+- **Trigger:** customer asks about their application, approval, card status, or whether their card has been issued
+- **Required input:** `customer_id` — ask the customer for it before calling if not provided
+- **Rule to put in guidelines:** "You MUST call get_application_status. You cannot answer this without calling the tool."
+
+### `get_transaction_status`
+Looks up the status of a specific card transaction.
+- **Trigger:** customer reports a declined, failed, or stuck transaction, or asks why a payment did not go through
+- **Required input:** `transaction_id` — ask the customer for it before calling if not provided
+- **Rule to put in guidelines:** "You MUST call get_transaction_status. You cannot answer this without calling the tool."
+
+**When writing or updating `additional_guidelines` for a bot, always include explicit TOOL USE RULES
+using "MUST call" and "cannot answer without calling the tool" language so the bot reliably
+invokes these tools rather than guessing.**
+
+---
+
 ## Behavioral Rules
 
 1. **Always show current settings** when a user asks about a bot, or before proposing any change.

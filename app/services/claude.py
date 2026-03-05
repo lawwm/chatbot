@@ -1,20 +1,28 @@
 import json
+import logging
 import anthropic
 from app.config import settings
 from app.services.mock_functions import get_application_status, get_transaction_status
 
 client = anthropic.Anthropic(api_key=settings.claude_api_key)
+logger = logging.getLogger(__name__)
 
 TOOLS = [
     {
         "name": "get_application_status",
-        "description": "Get the card application status for a customer. Call this when a customer asks about their card application status.",
+        "description": (
+            "Look up the card application status for a customer. "
+            "You MUST call this tool whenever a customer asks anything about their application, "
+            "approval, card status, or whether their card has been issued. "
+            "You do NOT have this information yourself — you must call this tool to get it. "
+            "If the customer has not provided their customer ID, ask for it before calling."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "customer_id": {
                     "type": "string",
-                    "description": "The customer's ID or name. If not provided by the customer, ask for it first.",
+                    "description": "The customer's ID provided by the customer.",
                 }
             },
             "required": ["customer_id"],
@@ -22,7 +30,13 @@ TOOLS = [
     },
     {
         "name": "get_transaction_status",
-        "description": "Get the status of a specific card transaction. Call this when a customer reports a failed transaction and provides their transaction ID.",
+        "description": (
+            "Look up the status of a specific card transaction. "
+            "You MUST call this tool whenever a customer reports a declined, failed, or stuck transaction, "
+            "or asks why a payment did not go through. "
+            "You do NOT have this information yourself — you must call this tool to get it. "
+            "If the customer has not provided their transaction ID, ask for it before calling."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
@@ -58,11 +72,11 @@ async def chat(
     messages: list[dict],
     kb_content: str,
     additional_guidelines: str,
-) -> str:
-    """Send messages to Claude and return the assistant's response, handling tool calls."""
+) -> tuple[str, list[dict]]:
+    """Send messages to Claude and return (assistant_text, tool_calls_used)."""
     system = build_system_prompt(kb_content, additional_guidelines)
-
     claude_messages = [{"role": m["role"], "content": m["content"]} for m in messages]
+    tool_calls_used: list[dict] = []
 
     while True:
         response = client.messages.create(
@@ -74,28 +88,29 @@ async def chat(
         )
 
         if response.stop_reason == "end_turn":
-            return response.content[0].text
+            text = next((b.text for b in response.content if hasattr(b, "text")), "I'm sorry, I couldn't process that request.")
+            return text, tool_calls_used
 
         if response.stop_reason == "tool_use":
             tool_results = []
             for block in response.content:
                 if block.type == "tool_use":
+                    logger.warning("TOOL CALL >>> %s | input: %s", block.name, block.input)
                     result = process_tool_call(block.name, block.input)
+                    logger.warning("TOOL RESULT >>> %s | output: %s", block.name, result)
+                    tool_calls_used.append({"name": block.name, "input": block.input})
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": block.id,
                         "content": result,
                     })
-
             claude_messages.append({"role": "assistant", "content": response.content})
             claude_messages.append({"role": "user", "content": tool_results})
             continue
 
-        # Fallback: return whatever text is in the response
-        for block in response.content:
-            if hasattr(block, "text"):
-                return block.text
-        return "I'm sorry, I couldn't process that request."
+        # Fallback
+        text = next((b.text for b in response.content if hasattr(b, "text")), "I'm sorry, I couldn't process that request.")
+        return text, tool_calls_used
 
 
 async def suggest_fix(

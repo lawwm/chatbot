@@ -210,8 +210,11 @@ async def _scrape(url: str, settings: dict, on_progress=None) -> list[dict]:
                         "language", "lang-", "locale",
                     )
                     for tag in body_el.find_all(True):
-                        cls = " ".join(tag.get("class", [])).lower()
-                        tid = (tag.get("id") or "").lower()
+                        try:
+                            cls = " ".join(tag.get("class", []) or []).lower()
+                            tid = (tag.get("id") or "").lower()
+                        except Exception:
+                            continue
                         if any(p in cls or p in tid for p in _NOISE_PATTERNS):
                             tag.decompose()
 

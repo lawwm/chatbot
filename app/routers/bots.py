@@ -13,6 +13,21 @@ from app.services.sessions import get_current_user
 from app.services.permissions import get_user_permission_bitmap
 from app.models.role import Permission
 
+DEFAULT_GUIDELINES = (
+    "You help customers with questions about the Atome Card.\n\n"
+    "TOOL USE RULES — follow these exactly:\n"
+    "- If a customer asks about their application, approval, card status, or whether their card has been issued: "
+    "you MUST call get_application_status. You cannot answer this without calling the tool. "
+    "Ask for their customer ID first if they have not provided it.\n"
+    "- If a customer mentions a declined, failed, or stuck transaction or asks why a payment did not go through: "
+    "you MUST call get_transaction_status. You cannot answer this without calling the tool. "
+    "Ask for their transaction ID first if they have not provided it.\n\n"
+    "GENERAL RULES:\n"
+    "- Answer all other questions using only the knowledge base.\n"
+    "- Be concise, friendly, and professional.\n"
+    "- If the answer is not in the knowledge base, say so honestly."
+)
+
 router = APIRouter(tags=["bots"])
 templates = Jinja2Templates(directory="app/templates")
 
@@ -74,7 +89,7 @@ async def new_bot_page(request: Request, user: dict = Depends(require_creation_r
 async def create_bot(
     request: Request,
     name: str = Form(...),
-    additional_guidelines: str = Form("You help customers with questions about the Atome Card.\n\nINSTRUCTIONS:\n- Answer questions using only the knowledge base above.\n- If a customer asks about their card application status, call the get_application_status tool. Ask for their customer ID first if not provided.\n- If a customer reports a failed card transaction, ask for their transaction ID, then call the get_transaction_status tool.\n- Be concise, friendly, and professional.\n- If you don't know the answer and it's not in the knowledge base, say so honestly."),
+    additional_guidelines: str = Form(DEFAULT_GUIDELINES),
     auto_fix_enabled: str = Form(None),
     allow_override: str = Form(None),
     is_public: str = Form(None),

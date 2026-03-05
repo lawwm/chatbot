@@ -46,12 +46,14 @@
             <textarea id="additional_guidelines" name="additional_guidelines"
                 placeholder="Optional instructions injected into the bot's system prompt.">You help customers with questions about the Atome Card.
 
-INSTRUCTIONS:
-- Answer questions using only the knowledge base above.
-- If a customer asks about their card application status, call the get_application_status tool. Ask for their customer ID first if not provided.
-- If a customer reports a failed card transaction, ask for their transaction ID, then call the get_transaction_status tool.
+TOOL USE RULES — follow these exactly:
+- If a customer asks about their application, approval, card status, or whether their card has been issued: you MUST call get_application_status. You cannot answer this without calling the tool. Ask for their customer ID first if they have not provided it.
+- If a customer mentions a declined, failed, or stuck transaction or asks why a payment did not go through: you MUST call get_transaction_status. You cannot answer this without calling the tool. Ask for their transaction ID first if they have not provided it.
+
+GENERAL RULES:
+- Answer all other questions using only the knowledge base.
 - Be concise, friendly, and professional.
-- If you don't know the answer and it's not in the knowledge base, say so honestly.</textarea>
+- If the answer is not in the knowledge base, say so honestly.</textarea>
         </div>
 
         <div class="form-group">

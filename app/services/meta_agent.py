@@ -1,8 +1,11 @@
 import asyncio
+import logging
 import re
 import uuid
 from datetime import datetime
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 import anthropic
 from bson import ObjectId
@@ -20,65 +23,48 @@ SYSTEM_PROMPT = _PROMPT_FILE.read_text(encoding="utf-8")
 TOOLS = [
     {
         "name": "list_bots",
-        "description": "List all bots the current user has access to (created by them or assigned a role).",
-        "input_schema": {
-            "type": "object",
-            "properties": {},
-            "required": [],
-        },
+        "description": (
+            "MUST call this tool when the user asks to see their bots, mentions 'my bots', "
+            "asks what bots exist, or needs a bot_id you do not already have. "
+            "You cannot know what bots exist without calling this. Returns name, id, and slug for each bot."
+        ),
+        "input_schema": {"type": "object", "properties": {}, "required": []},
     },
     {
         "name": "get_bot_settings",
-        "description": "Get full settings for a bot by name or id.",
+        "description": (
+            "MUST call this tool before showing settings, before updating anything, or whenever the user asks "
+            "about a bot's current configuration. You do not know the current settings without calling this. "
+            "Provide bot_id if known, otherwise provide bot_name for a partial name match."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
-                "bot_name": {
-                    "type": "string",
-                    "description": "The bot's name (partial match). Used when bot_id is not known.",
-                },
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
+                "bot_name": {"type": "string", "description": "Partial bot name. Use when bot_id is not known."},
             },
             "required": [],
         },
     },
     {
         "name": "update_bot_settings",
-        "description": "Update one or more settings for a bot. Only provide the fields you want to change.",
+        "description": (
+            "MUST call this tool to save any change to a bot's settings. "
+            "Call get_bot_settings first if you do not already have the bot_id. "
+            "Only include the fields you are changing — omit everything else."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
-                "kb_urls": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "List of knowledge base URLs.",
-                },
-                "additional_guidelines": {
-                    "type": "string",
-                    "description": "The bot's additional guidelines text.",
-                },
-                "auto_fix_enabled": {
-                    "type": "boolean",
-                    "description": "Whether auto-fix is enabled for this bot.",
-                },
-                "allow_override": {
-                    "type": "boolean",
-                    "description": "Whether customers can override bot behavior.",
-                },
-                "is_public": {
-                    "type": "boolean",
-                    "description": "Whether the bot is publicly visible.",
-                },
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
+                "kb_urls": {"type": "array", "items": {"type": "string"}, "description": "Full list of KB URLs to set."},
+                "additional_guidelines": {"type": "string", "description": "Full guidelines text to save."},
+                "auto_fix_enabled": {"type": "boolean", "description": "Enable or disable auto-fix."},
+                "allow_override": {"type": "boolean", "description": "Allow auto-fix to override conflicting guidelines."},
+                "is_public": {"type": "boolean", "description": "Make the bot publicly accessible."},
                 "scraper_settings": {
                     "type": "object",
-                    "description": "Scraper config keys: max_articles, depth, strategy, delay_ms, timeout_s, max_chars_per_article.",
+                    "description": "Scraper config. Keys: max_articles (int), depth (int), strategy ('bfs'|'dfs'), delay_ms (int), timeout_s (int), max_chars_per_article (int).",
                 },
             },
             "required": ["bot_id"],
@@ -86,123 +72,111 @@ TOOLS = [
     },
     {
         "name": "trigger_scrape",
-        "description": "Start a KB scrape for a bot using its current kb_urls and scraper_settings. Runs in the background.",
+        "description": (
+            "MUST call this tool when the user asks to scrape, re-scrape, populate, or refresh the knowledge base. "
+            "Runs in the background using the bot's saved kb_urls and scraper_settings. "
+            "Call get_bot_settings first if you need to confirm what URLs will be scraped."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
             },
             "required": ["bot_id"],
         },
     },
     {
         "name": "list_mistakes",
-        "description": "List open (unresolved) mistakes reported by customers for a bot.",
+        "description": (
+            "MUST call this tool when the user asks to see mistakes, complaints, or reported errors for a bot. "
+            "You cannot know what mistakes exist without calling this. Returns open (unresolved) mistakes only."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
             },
             "required": ["bot_id"],
         },
     },
     {
         "name": "analyze_mistake",
-        "description": "Analyze a mistake using AI: generate a suggested guideline fix and check for conflicts with existing guidelines.",
+        "description": (
+            "MUST call this tool when the user wants to analyze a mistake, get a suggested fix, or see what guideline change is recommended. "
+            "Call list_mistakes first if you do not have the mistake_id. "
+            "Returns a suggested fix text and whether it conflicts with existing guidelines."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
-                "mistake_id": {
-                    "type": "string",
-                    "description": "The mistake's MongoDB ObjectId string.",
-                },
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
+                "mistake_id": {"type": "string", "description": "MongoDB ObjectId string of the mistake."},
             },
             "required": ["bot_id", "mistake_id"],
         },
     },
     {
         "name": "apply_fix",
-        "description": "Apply a guidelines fix to a mistake: update the bot's guidelines and archive the mistake.",
+        "description": (
+            "MUST call this tool to apply an approved fix: updates the bot's guidelines and archives the mistake. "
+            "Always show the user the new_guidelines text and get explicit confirmation before calling. "
+            "Call analyze_mistake first if suggested fix text is not yet available."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
-                "mistake_id": {
-                    "type": "string",
-                    "description": "The mistake's MongoDB ObjectId string.",
-                },
-                "new_guidelines": {
-                    "type": "string",
-                    "description": "The full updated guidelines text to save for the bot.",
-                },
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
+                "mistake_id": {"type": "string", "description": "MongoDB ObjectId string of the mistake."},
+                "new_guidelines": {"type": "string", "description": "The complete updated guidelines text to save."},
             },
             "required": ["bot_id", "mistake_id", "new_guidelines"],
         },
     },
     {
         "name": "dismiss_mistake",
-        "description": "Delete a mistake without applying any fix.",
+        "description": (
+            "MUST call this tool to delete a mistake without applying any fix. "
+            "Always confirm with the user before calling — this permanently removes the mistake."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "mistake_id": {
-                    "type": "string",
-                    "description": "The mistake's MongoDB ObjectId string.",
-                },
+                "mistake_id": {"type": "string", "description": "MongoDB ObjectId string of the mistake."},
             },
             "required": ["mistake_id"],
         },
     },
     {
         "name": "list_roles",
-        "description": "List roles and their user assignments for a bot.",
+        "description": (
+            "MUST call this tool when the user asks about roles, permissions, or who has access to a bot. "
+            "You cannot know the roles or assignments without calling this. "
+            "Also call this before creating, assigning, or deleting roles."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
             },
             "required": ["bot_id"],
         },
     },
     {
         "name": "create_role",
-        "description": "Create a new role for a bot with specified permissions.",
+        "description": (
+            "MUST call this tool to create a new role with specific permissions for a bot. "
+            "Valid permission names: VIEW_SETTINGS, EDIT_KB_URL, EDIT_GUIDELINES, "
+            "TOGGLE_AUTOFIX, REVIEW_MISTAKES, APPROVE_FIXES, MANAGE_ROLES, DELETE_BOT."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
-                "role_name": {
-                    "type": "string",
-                    "description": "Name for the new role.",
-                },
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
+                "role_name": {"type": "string", "description": "Display name for the role."},
                 "permissions": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": (
-                        "Permission names to grant. Valid values: "
-                        "VIEW_SETTINGS, EDIT_KB_URL, EDIT_GUIDELINES, "
-                        "TOGGLE_AUTOFIX, REVIEW_MISTAKES, APPROVE_FIXES, "
-                        "MANAGE_ROLES, DELETE_BOT."
-                    ),
+                    "description": "List of permission names to grant. Valid values: VIEW_SETTINGS, EDIT_KB_URL, EDIT_GUIDELINES, TOGGLE_AUTOFIX, REVIEW_MISTAKES, APPROVE_FIXES, MANAGE_ROLES, DELETE_BOT.",
                 },
             },
             "required": ["bot_id", "role_name", "permissions"],
@@ -210,86 +184,76 @@ TOOLS = [
     },
     {
         "name": "assign_role",
-        "description": "Assign an existing role to a user by their username.",
+        "description": (
+            "MUST call this tool to assign a role to a user by username. "
+            "Call list_roles first if you do not have the role_id."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "role_id": {
-                    "type": "string",
-                    "description": "The role's MongoDB ObjectId string.",
-                },
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
-                "username": {
-                    "type": "string",
-                    "description": "The username of the user to assign the role to.",
-                },
+                "role_id": {"type": "string", "description": "MongoDB ObjectId string of the role."},
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
+                "username": {"type": "string", "description": "Username of the user to assign the role to."},
             },
             "required": ["role_id", "bot_id", "username"],
         },
     },
     {
         "name": "delete_role",
-        "description": "Delete a role and revoke all its user assignments.",
+        "description": (
+            "MUST call this tool to delete a role and remove all its user assignments. "
+            "Always confirm with the user before calling — this is irreversible. "
+            "Call list_roles first if you do not have the role_id."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "role_id": {
-                    "type": "string",
-                    "description": "The role's MongoDB ObjectId string.",
-                },
+                "role_id": {"type": "string", "description": "MongoDB ObjectId string of the role."},
             },
             "required": ["role_id"],
         },
     },
     {
         "name": "revoke_role",
-        "description": "Revoke a specific user's role assignment by the user_roles document id.",
+        "description": (
+            "MUST call this tool to remove a specific role assignment from a user. "
+            "Call list_roles first to get the user_role_id — it is listed under each role's assignments."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "user_role_id": {
-                    "type": "string",
-                    "description": "The user_roles document's MongoDB ObjectId string.",
-                },
+                "user_role_id": {"type": "string", "description": "MongoDB ObjectId string from the user_roles collection."},
             },
             "required": ["user_role_id"],
         },
     },
     {
         "name": "create_bot",
-        "description": "Create a new bot with a name, optional KB URL, and optional initial guidelines.",
+        "description": (
+            "MUST call this tool when the user asks to create a new bot. "
+            "Ask for the bot name if not provided. "
+            "After calling, immediately call get_bot_settings to show the created bot's full details."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "The bot name.",
-                },
-                "kb_url": {
-                    "type": "string",
-                    "description": "Knowledge base URL (optional). If provided, a scrape is started automatically.",
-                },
-                "additional_guidelines": {
-                    "type": "string",
-                    "description": "Initial guidelines text (optional).",
-                },
+                "name": {"type": "string", "description": "The bot name."},
+                "kb_url": {"type": "string", "description": "Optional knowledge base URL. If provided, a scrape starts automatically."},
+                "additional_guidelines": {"type": "string", "description": "Optional initial guidelines text."},
             },
             "required": ["name"],
         },
     },
     {
         "name": "delete_bot",
-        "description": "Permanently delete a bot and ALL its associated data (settings, KB content, vectors, conversations, mistakes, roles). This is irreversible. Always confirm with the user before calling this tool.",
+        "description": (
+            "MUST call this tool to permanently delete a bot and ALL its data: settings, KB content, vectors, conversations, mistakes, and roles. "
+            "This is irreversible. Always show the user the bot name and explicitly ask for confirmation before calling."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {
-                "bot_id": {
-                    "type": "string",
-                    "description": "The bot's MongoDB ObjectId string.",
-                },
+                "bot_id": {"type": "string", "description": "MongoDB ObjectId string of the bot."},
             },
             "required": ["bot_id"],
         },
@@ -646,7 +610,8 @@ async def _tool_create_bot(inp: dict, user_id: str) -> str:
     db = get_db()
     name = inp.get("name", "").strip()
     kb_url = inp.get("kb_url", "").strip()
-    guidelines = inp.get("additional_guidelines", "You help customers with questions about the Atome Card.\n\nINSTRUCTIONS:\n- Answer questions using only the knowledge base above.\n- If a customer asks about their card application status, call the get_application_status tool. Ask for their customer ID first if not provided.\n- If a customer reports a failed card transaction, ask for their transaction ID, then call the get_transaction_status tool.\n- Be concise, friendly, and professional.\n- If you don't know the answer and it's not in the knowledge base, say so honestly.")
+    from app.routers.bots import DEFAULT_GUIDELINES
+    guidelines = inp.get("additional_guidelines", DEFAULT_GUIDELINES)
 
     if not name:
         return "Bot name is required."
@@ -775,12 +740,17 @@ _TOOL_MAP = {
 
 
 async def _dispatch_tool(name: str, inp: dict, user_id: str) -> str:
+    log.warning("META TOOL CALL >>> name=%s | user_id=%s | input=%s", name, user_id, inp)
     handler = _TOOL_MAP.get(name)
     if not handler:
+        log.warning("META TOOL CALL >>> unknown tool: %s", name)
         return f"Unknown tool: {name}"
     try:
-        return await handler(inp, user_id)
+        result = await handler(inp, user_id)
+        log.warning("META TOOL RESULT >>> name=%s | result=%s", name, result)
+        return result
     except Exception as e:
+        log.warning("META TOOL ERROR >>> name=%s | error=%s", name, e)
         return f"Tool error ({name}): {e}"
 
 
@@ -788,8 +758,8 @@ async def _dispatch_tool(name: str, inp: dict, user_id: str) -> str:
 # Agent loop
 # ---------------------------------------------------------------------------
 
-async def run_agent(user_id: str, conv_id: str, user_message: str) -> str:
-    """Run the meta-agent for one user turn. Returns the assistant's final text."""
+async def run_agent(user_id: str, conv_id: str, user_message: str) -> tuple[str, list[str]]:
+    """Run the meta-agent for one user turn. Returns (assistant_text, tool_names_called)."""
     db = get_db()
 
     # Load stored conversation (text turns only)
@@ -809,11 +779,12 @@ async def run_agent(user_id: str, conv_id: str, user_message: str) -> str:
     api_messages: list = [{"role": m["role"], "content": m["content"]} for m in stored_messages]
 
     assistant_text = "I'm sorry, I couldn't process that request."
+    tool_names: list[str] = []
 
     while True:
         response = await asyncio.to_thread(
             client.messages.create,
-            model="claude-sonnet-4-6",
+            model="claude-haiku-4-5-20251001",
             max_tokens=2048,
             system=SYSTEM_PROMPT,
             tools=TOOLS,
@@ -831,6 +802,7 @@ async def run_agent(user_id: str, conv_id: str, user_message: str) -> str:
             tool_results = []
             for block in response.content:
                 if block.type == "tool_use":
+                    tool_names.append(block.name)
                     result = await _dispatch_tool(block.name, block.input, user_id)
                     tool_results.append({
                         "type": "tool_result",
@@ -864,4 +836,4 @@ async def run_agent(user_id: str, conv_id: str, user_message: str) -> str:
         upsert=True,
     )
 
-    return assistant_text
+    return assistant_text, tool_names
