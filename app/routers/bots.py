@@ -33,7 +33,7 @@ async def dashboard(request: Request):
     user = await get_current_user(session_id) if session_id else None
 
     if user:
-        is_creator = user.get("has_creation_role")
+        is_creator = user.get("allow_create_agent")
         user_id = str(user["_id"])
         if is_creator:
             bots = await db.bots.find().to_list(None)
@@ -158,7 +158,7 @@ async def delete_bot(request: Request, bot_id: str, user: dict = Depends(require
         return RedirectResponse("/dashboard", status_code=302)
 
     user_id = str(user["_id"])
-    is_creator = user.get("has_creation_role")
+    is_creator = user.get("allow_create_agent")
     is_bot_creator = bot.get("created_by") == user_id
     bitmap = await get_user_permission_bitmap(user_id, bot_id)
     can_delete = is_creator or is_bot_creator or bool(bitmap & Permission.DELETE_BOT)

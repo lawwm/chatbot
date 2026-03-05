@@ -15,6 +15,6 @@ async def require_auth(request: Request) -> dict:
 
 async def require_creation_role(request: Request) -> dict:
     user = await require_auth(request)
-    if not user.get("has_creation_role"):
+    if not user.get("allow_create_agent"):
         raise HTTPException(status_code=403, detail="Requires creation role")
     return user

@@ -23,7 +23,7 @@ async def has_permission(user_id: str, bot_id: str, permission: Permission) -> b
 
 
 async def has_creation_role(user: dict) -> bool:
-    return user.get("has_creation_role", False)
+    return user.get("allow_create_agent", False)
 
 
 def require_permission(permission: Permission):

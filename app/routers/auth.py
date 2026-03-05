@@ -45,6 +45,37 @@ async def logout(request: Request):
     return response
 
 
+@router.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    session_id = request.cookies.get("session_id")
+    if session_id and await get_current_user(session_id):
+        return RedirectResponse("/dashboard", status_code=302)
+    return templates.TemplateResponse("auth/register.html", {"request": request})
+
+
+@router.post("/register")
+async def register(request: Request, username: str = Form(...), password: str = Form(...)):
+    db = get_db()
+    existing = await db.users.find_one({"username": username})
+    if existing:
+        return templates.TemplateResponse(
+            "auth/register.html",
+            {"request": request, "error": "Username already taken"},
+            status_code=400,
+        )
+    hashed = pwd_context.hash(password)
+    result = await db.users.insert_one({
+        "username": username,
+        "password_hash": hashed,
+        "allow_create_agent": False,
+        "created_at": datetime.utcnow(),
+    })
+    session_id = await create_session(str(result.inserted_id))
+    response = RedirectResponse("/dashboard", status_code=302)
+    response.set_cookie("session_id", session_id, httponly=True, samesite="lax")
+    return response
+
+
 @router.get("/setup", response_class=HTMLResponse)
 async def setup_page(request: Request):
     """First-time setup: create the first admin user if no users exist."""
@@ -65,7 +96,7 @@ async def setup(request: Request, username: str = Form(...), password: str = For
     result = await db.users.insert_one({
         "username": username,
         "password_hash": hashed,
-        "has_creation_role": True,
+        "allow_create_agent": True,
         "created_at": datetime.utcnow(),
     })
     session_id = await create_session(str(result.inserted_id))

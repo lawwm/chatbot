@@ -18,7 +18,7 @@ templates.env.filters["bitwise_and"] = lambda a, b: int(a) & int(b)
 async def roles_page(request: Request, bot_id: str, user: dict = Depends(require_auth)):
     db = get_db()
     bitmap = await get_user_permission_bitmap(str(user["_id"]), bot_id)
-    is_creator = user.get("has_creation_role")
+    is_creator = user.get("allow_create_agent")
     if not is_creator and not (bitmap & Permission.MANAGE_ROLES):
         return RedirectResponse(f"/dashboard/bots/{bot_id}/settings", status_code=302)
 

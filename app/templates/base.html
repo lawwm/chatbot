@@ -16,7 +16,7 @@
         <div class="nav-links">
             <a href="/dashboard">Bots</a>
             {% if user %}
-            {% if user.has_creation_role %}
+            {% if user.allow_create_agent %}
             <a href="/meta">Meta</a>
             {% endif %}
             <form method="post" action="/auth/logout" style="display:inline">
