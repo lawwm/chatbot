@@ -418,6 +418,7 @@ To prevent this, every suggested fix is checked against the current guidelines b
 | **Allow Override on Conflict** | If a conflict is detected during auto-fix, apply the new fix anyway (override the conflicting rule). If unchecked, conflicts are held for manual review instead. |
 
 <!-- SCREENSHOT: Settings page showing the Enable Auto-Fix and Allow Override on Conflict checkboxes -->
+<img width="330" height="165" alt="image" src="https://github.com/user-attachments/assets/cc9d3085-0b6c-47d6-a36c-952eeb71badf" />
 
 **Manual review flow (when auto-fix is off, or conflict is held):**
 
@@ -434,9 +435,8 @@ To prevent this, every suggested fix is checked against the current guidelines b
 - **Use Existing** — keep the current guidelines as-is; the suggested fix is discarded.
 - **Apply Fix** — the new fix takes precedence; the conflicting existing rule is overridden.
 
-A description of exactly what conflicts explains why the two versions diverge, so the manager can make an informed decision.
-
 <!-- SCREENSHOT: Mistakes page showing the conflict view with "Use Existing" and "Apply Fix" side by side -->
+<img width="1001" height="586" alt="image" src="https://github.com/user-attachments/assets/67723941-927e-4238-849b-7669c6c57e06" />
 
 ---
 
