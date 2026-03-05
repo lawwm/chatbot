@@ -177,11 +177,6 @@ async def apply_fix(
     if not doc:
         return HTMLResponse("Mistake not found", status_code=404)
 
-    html = (
-        f'<div id="mistake-{mistake_id}" class="alert alert-success" '
-        f'style="margin-bottom:1rem;">Fix applied and guidelines updated.</div>'
-        + _archive_row_html(doc)
-    )
-    response = HTMLResponse(content=html)
+    response = HTMLResponse(content=f'<div id="mistake-{mistake_id}" style="display:none"></div>')
     response.headers["HX-Trigger"] = "mistakeArchived"
     return response

@@ -13,7 +13,7 @@
 
 <!-- Open Mistakes -->
 <div class="card">
-    <h2 style="font-size:1.1rem; margin-bottom:1rem;">Open ({{ open_mistakes | length }})</h2>
+    <h2 id="open-count-heading" style="font-size:1.1rem; margin-bottom:1rem;">Open ({{ open_mistakes | length }})</h2>
     {% if not open_mistakes %}
     <p class="text-muted">No open mistakes. Great job!</p>
     {% else %}
@@ -46,22 +46,18 @@
                         <p style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-bottom:0.5rem;">KEEP EXISTING</p>
                         <pre style="font-size:0.8rem; background:var(--bg); padding:0.75rem; border-radius:var(--radius); white-space:pre-wrap; max-height:180px; overflow:auto;">{{ mistake.merge_result.keep_version }}</pre>
                         <form hx-post="/dashboard/bots/{{ bot._id }}/mistakes/{{ mistake._id }}/apply"
-                              hx-target="#mistake-{{ mistake._id }}" hx-swap="outerHTML"
-                              hx-indicator="#spin-keep-{{ mistake._id }}">
+                              hx-target="#mistake-{{ mistake._id }}" hx-swap="outerHTML">
                             <input type="hidden" name="fix" value="{{ mistake.merge_result.keep_version }}">
                             <button type="submit" class="btn btn-secondary" style="margin-top:0.5rem;">Use Existing</button>
-                            <span id="spin-keep-{{ mistake._id }}" class="htmx-indicator spinner" style="margin-left:0.5rem;"></span>
                         </form>
                     </div>
                     <div>
                         <p style="font-size:0.75rem; font-weight:600; color:var(--warning); margin-bottom:0.5rem;">APPLY FIX (overrides)</p>
                         <pre style="font-size:0.8rem; background:var(--bg); padding:0.75rem; border-radius:var(--radius); white-space:pre-wrap; max-height:180px; overflow:auto;">{{ mistake.merge_result.override_version }}</pre>
                         <form hx-post="/dashboard/bots/{{ bot._id }}/mistakes/{{ mistake._id }}/apply"
-                              hx-target="#mistake-{{ mistake._id }}" hx-swap="outerHTML"
-                              hx-indicator="#spin-override-{{ mistake._id }}">
+                              hx-target="#mistake-{{ mistake._id }}" hx-swap="outerHTML">
                             <input type="hidden" name="fix" value="{{ mistake.merge_result.override_version }}">
                             <button type="submit" class="btn btn-primary" style="margin-top:0.5rem;">Apply Fix</button>
-                            <span id="spin-override-{{ mistake._id }}" class="htmx-indicator spinner" style="margin-left:0.5rem;"></span>
                         </form>
                     </div>
                 </div>
@@ -69,29 +65,21 @@
             {% elif mistake.suggested_fix %}
             <!-- Pre-analyzed (from auto-fix, no conflict) -->
             <form hx-post="/dashboard/bots/{{ bot._id }}/mistakes/{{ mistake._id }}/apply"
-                  hx-target="#mistake-{{ mistake._id }}" hx-swap="outerHTML"
-                  hx-indicator="#apply-spinner-{{ mistake._id }}">
+                  hx-target="#mistake-{{ mistake._id }}" hx-swap="outerHTML">
                 <div class="form-group">
                     <label style="font-size:0.75rem; font-weight:600; color:var(--success);">SUGGESTED FIX (edit if needed)</label>
                     <textarea name="fix" style="min-height:120px;">{{ mistake.suggested_fix }}</textarea>
                 </div>
-                <div class="flex gap-1" style="align-items:center;">
-                    <button type="submit" class="btn btn-primary">Apply Fix &amp; Archive</button>
-                    <span id="apply-spinner-{{ mistake._id }}" class="htmx-indicator spinner"></span>
-                </div>
+                <button type="submit" class="btn btn-primary">Apply Fix &amp; Archive</button>
             </form>
             {% else %}
             <!-- Not yet analyzed -->
-            <div class="flex gap-1" style="align-items:center;">
-                <button class="btn btn-primary"
-                    hx-post="/dashboard/bots/{{ bot._id }}/mistakes/{{ mistake._id }}/analyze"
-                    hx-target="#fix-area-{{ mistake._id }}"
-                    hx-swap="innerHTML"
-                    hx-indicator="#spinner-{{ mistake._id }}">
-                    Analyze &amp; Suggest Fix
-                </button>
-                <span id="spinner-{{ mistake._id }}" class="htmx-indicator spinner"></span>
-            </div>
+            <button class="btn btn-primary"
+                hx-post="/dashboard/bots/{{ bot._id }}/mistakes/{{ mistake._id }}/analyze"
+                hx-target="#fix-area-{{ mistake._id }}"
+                hx-swap="innerHTML">
+                Analyze &amp; Suggest Fix
+            </button>
             {% endif %}
             {% else %}
             <span class="text-muted" style="font-size:0.85rem;">Awaiting review by an authorized user.</span>
@@ -146,5 +134,15 @@ function showFixModal(text) {
     document.getElementById('fix-modal-content').textContent = text;
     document.getElementById('fix-modal').showModal();
 }
+
+document.body.addEventListener('mistakeArchived', function() {
+    const h = document.getElementById('open-count-heading');
+    if (!h) return;
+    const m = h.textContent.match(/\d+/);
+    if (m) {
+        const n = Math.max(0, parseInt(m[0]) - 1);
+        h.textContent = 'Open (' + n + ')';
+    }
+});
 </script>
 {% endblock %}

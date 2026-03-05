@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="/static/css/main.css">
     <style>
         @keyframes btn-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-        .btn-loading { position: relative; color: transparent !important; pointer-events: none; }
-        .btn-loading::after {
+        .btn-loading, .btn.htmx-request { position: relative; color: transparent !important; pointer-events: none; }
+        .btn-loading::after, .btn.htmx-request::after {
             content: '';
             position: absolute;
             top: 50%; left: 50%;
