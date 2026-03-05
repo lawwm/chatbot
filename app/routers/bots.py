@@ -74,7 +74,7 @@ async def new_bot_page(request: Request, user: dict = Depends(require_creation_r
 async def create_bot(
     request: Request,
     name: str = Form(...),
-    additional_guidelines: str = Form(""),
+    additional_guidelines: str = Form("You help customers with questions about the Atome Card.\n\nINSTRUCTIONS:\n- Answer questions using only the knowledge base above.\n- If a customer asks about their card application status, call the get_application_status tool. Ask for their customer ID first if not provided.\n- If a customer reports a failed card transaction, ask for their transaction ID, then call the get_transaction_status tool.\n- Be concise, friendly, and professional.\n- If you don't know the answer and it's not in the knowledge base, say so honestly."),
     auto_fix_enabled: str = Form(None),
     allow_override: str = Form(None),
     is_public: str = Form(None),

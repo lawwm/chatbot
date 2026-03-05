@@ -646,7 +646,7 @@ async def _tool_create_bot(inp: dict, user_id: str) -> str:
     db = get_db()
     name = inp.get("name", "").strip()
     kb_url = inp.get("kb_url", "").strip()
-    guidelines = inp.get("additional_guidelines", "")
+    guidelines = inp.get("additional_guidelines", "You help customers with questions about the Atome Card.\n\nINSTRUCTIONS:\n- Answer questions using only the knowledge base above.\n- If a customer asks about their card application status, call the get_application_status tool. Ask for their customer ID first if not provided.\n- If a customer reports a failed card transaction, ask for their transaction ID, then call the get_transaction_status tool.\n- Be concise, friendly, and professional.\n- If you don't know the answer and it's not in the knowledge base, say so honestly.")
 
     if not name:
         return "Bot name is required."

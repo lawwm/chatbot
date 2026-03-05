@@ -38,23 +38,9 @@ TOOLS = [
 
 
 def build_system_prompt(kb_content: str, additional_guidelines: str) -> str:
-    prompt = f"""You are a helpful customer service assistant for Atome, a Buy Now Pay Later service.
-
-You help customers with questions about the Atome Card.
-
-KNOWLEDGE BASE:
-{kb_content}
-
-INSTRUCTIONS:
-- Answer questions using only the knowledge base above.
-- If a customer asks about their card application status, call the get_application_status tool. Ask for their customer ID first if not provided.
-- If a customer reports a failed card transaction, ask for their transaction ID, then call the get_transaction_status tool.
-- Be concise, friendly, and professional.
-- If you don't know the answer and it's not in the knowledge base, say so honestly.
-"""
+    prompt = f"You are a helpful customer service assistant for Atome, a Buy Now Pay Later service.\n\nKNOWLEDGE BASE:\n{kb_content}\n"
     if additional_guidelines.strip():
-        prompt += f"\nADDITIONAL GUIDELINES:\n{additional_guidelines}\n"
-
+        prompt += f"\n{additional_guidelines}\n"
     return prompt
 
 

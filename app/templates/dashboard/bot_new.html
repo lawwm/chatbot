@@ -44,7 +44,14 @@
                 </span>
             </label>
             <textarea id="additional_guidelines" name="additional_guidelines"
-                placeholder="Optional instructions injected into the bot's system prompt."></textarea>
+                placeholder="Optional instructions injected into the bot's system prompt.">You help customers with questions about the Atome Card.
+
+INSTRUCTIONS:
+- Answer questions using only the knowledge base above.
+- If a customer asks about their card application status, call the get_application_status tool. Ask for their customer ID first if not provided.
+- If a customer reports a failed card transaction, ask for their transaction ID, then call the get_transaction_status tool.
+- Be concise, friendly, and professional.
+- If you don't know the answer and it's not in the knowledge base, say so honestly.</textarea>
         </div>
 
         <div class="form-group">
