@@ -176,3 +176,12 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 /* Spinner */
 .spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Info button */
+.info-wrap { display: inline-flex; align-items: center; vertical-align: middle; }
+.info-btn { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; margin: 0; flex-shrink: 0; line-height: 0; transition: color 0.15s; vertical-align: middle; }
+.info-btn:hover { color: var(--primary); }
+
+/* Tippy dark theme override */
+.tippy-box[data-theme~='dark-custom'] { background:#1e293b; color:#f8fafc; font-size:0.78rem; border-radius:6px; border:1px solid #334155; }
+.tippy-box[data-theme~='dark-custom'] .tippy-arrow::before { border-top-color:#334155; }

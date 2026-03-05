@@ -20,6 +20,9 @@
 .btn-danger { background: var(--danger) !important; color: #fff !important; border-color: transparent !important; }
 .btn.disabled, .btn:disabled { opacity: 0.45 !important; cursor: not-allowed !important; pointer-events: none !important; }
 .badge-success { color: #fff !important; }
+.page-header h1 { font-size: 1.5rem !important; font-weight: 700 !important; line-height: 1.3 !important; }
+.page-header .text-muted { font-size: 0.875rem !important; color: var(--text-muted) !important; font-weight: 400 !important; }
+.info-btn { display: inline-flex !important; padding: 0 !important; margin: 0 !important; min-height: unset !important; height: auto !important; width: auto !important; border: none !important; background: none !important; box-shadow: none !important; vertical-align: middle !important; }
 </style>
 {% endblock %}
 {% block content %}
@@ -65,7 +68,11 @@
         </div>
 
         <div class="form-group">
-            <label>Knowledge Base URLs</label>
+            <label style="display:flex; align-items:center; gap:0.4rem;">Knowledge Base URLs
+                <span class="info-wrap" data-tip="Each URL is scraped separately using the scraper settings below. All articles are merged into one knowledge base. Saving clears and re-scrapes everything.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
+            </label>
 
             {% if show_kb_banner %}
             <div id="kb-multi-banner" style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius); padding:0.75rem 1rem; margin-bottom:0.75rem; font-size:0.85rem; color:#1e40af;">
@@ -99,15 +106,17 @@
                 </div>
                 {% endfor %}
             </div>
-            <p class="text-muted mt-1">Saving will scrape all URLs and replace the existing knowledge base.</p>
         </div>
 
 
         <div class="form-group">
-            <label for="additional_guidelines">Additional Guidelines</label>
+            <label for="additional_guidelines" style="display:flex; align-items:center; gap:0.4rem;">Additional Guidelines
+                <span class="info-wrap" data-tip="Free-text instructions injected into the bot's system prompt. Define tone, scope, or rules — e.g. 'Always respond in Filipino'.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
+            </label>
             <textarea id="additional_guidelines" name="additional_guidelines"
                 {% if not permissions.edit_guidelines %}disabled{% endif %}>{{ bot.additional_guidelines }}</textarea>
-            <p class="text-muted mt-1">These are injected into the bot's system prompt.</p>
         </div>
 
         <div class="form-group">
@@ -116,8 +125,10 @@
                     {% if bot.auto_fix_enabled %}checked{% endif %}
                     {% if not permissions.toggle_autofix %}disabled{% endif %}>
                 Enable Auto-Fix
+                <span class="info-wrap" data-tip="Reported mistakes are analyzed by AI and automatically applied to guidelines when no conflict is found.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
             </label>
-            <p class="text-muted mt-1">When enabled, reported mistakes are analyzed and applied to guidelines automatically.</p>
         </div>
 
         <div class="form-group">
@@ -126,8 +137,10 @@
                     {% if bot.allow_override %}checked{% endif %}
                     {% if not permissions.toggle_autofix %}disabled{% endif %}>
                 Allow Override on Conflict
+                <span class="info-wrap" data-tip="When Auto-Fix finds a conflict with existing guidelines, apply the fix anyway. If unchecked, conflicts are held for manual review.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
             </label>
-            <p class="text-muted mt-1">When auto-fix detects a conflict with existing guidelines, the fix wins automatically. If unchecked, conflicts require manual review.</p>
         </div>
 
         <div class="form-group">
@@ -135,8 +148,10 @@
                 <input type="checkbox" name="is_public"
                     {% if bot.is_public %}checked{% endif %}>
                 Public
+                <span class="info-wrap" data-tip="Public bots are visible to all visitors. Private bots are only visible to you and users with an assigned role.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
             </label>
-            <p class="text-muted mt-1">Public bots are visible to all users. Private bots are only visible to you and users with assigned roles.</p>
         </div>
 
         <details class="scraper-settings" style="margin-bottom:1rem;">
@@ -144,30 +159,54 @@
             <div class="scraper-settings-body">
                 {% set s = bot.scraper_settings or {} %}
                 <div class="form-group">
-                    <label for="scraper_max_articles">Max Articles</label>
+                    <label for="scraper_max_articles" style="display:flex;align-items:center;gap:0.4rem;">Max Articles
+                        <span class="info-wrap" data-tip="Maximum number of articles to scrape across all KB URLs. Scraping stops once this limit is reached.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_max_articles" name="scraper_max_articles" value="{{ s.get('max_articles', 30) }}" min="1" max="200">
                 </div>
                 <div class="form-group">
-                    <label for="scraper_depth">Crawl Depth</label>
+                    <label for="scraper_depth" style="display:flex;align-items:center;gap:0.4rem;">Crawl Depth
+                        <span class="info-wrap" data-tip="How many levels of links to follow from the starting URL. Depth 1 = only pages linked directly from the start URL. Higher values scrape more pages but take longer.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_depth" name="scraper_depth" value="{{ s.get('depth', 1) }}" min="1" max="5">
                 </div>
                 <div class="form-group">
-                    <label for="scraper_strategy">Traversal Strategy</label>
+                    <label for="scraper_strategy" style="display:flex;align-items:center;gap:0.4rem;">Traversal Strategy
+                        <span class="info-wrap" data-tip="BFS (breadth-first) visits all pages at the current depth before going deeper — good for broad topic coverage. DFS (depth-first) follows each link chain fully before backtracking — good for deeply nested topics.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <select id="scraper_strategy" name="scraper_strategy">
                         <option value="bfs" {% if s.get('strategy', 'bfs') == 'bfs' %}selected{% endif %}>BFS — broad coverage (recommended)</option>
                         <option value="dfs" {% if s.get('strategy') == 'dfs' %}selected{% endif %}>DFS — follow topics deeply</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="scraper_delay_ms">Request Delay (ms)</label>
+                    <label for="scraper_delay_ms" style="display:flex;align-items:center;gap:0.4rem;">Request Delay (ms)
+                        <span class="info-wrap" data-tip="Wait time between each page request in milliseconds. A delay of 500ms is polite to the server. Set to 0 for fastest scraping, but this may trigger rate limiting.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_delay_ms" name="scraper_delay_ms" value="{{ s.get('delay_ms', 500) }}" min="0" max="5000">
                 </div>
                 <div class="form-group">
-                    <label for="scraper_timeout_s">Request Timeout (s)</label>
+                    <label for="scraper_timeout_s" style="display:flex;align-items:center;gap:0.4rem;">Request Timeout (s)
+                        <span class="info-wrap" data-tip="How long to wait for a page to load before giving up. Increase this for slow websites. Pages that exceed the timeout are skipped.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_timeout_s" name="scraper_timeout_s" value="{{ s.get('timeout_s', 20) }}" min="5" max="60">
                 </div>
                 <div class="form-group">
-                    <label for="scraper_max_chars">Max Characters per Article</label>
+                    <label for="scraper_max_chars" style="display:flex;align-items:center;gap:0.4rem;">Max Characters per Article
+                        <span class="info-wrap" data-tip="Each article's body text is truncated to this length before being stored. Lower values reduce knowledge base size; higher values preserve more detail per article.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_max_chars" name="scraper_max_chars" value="{{ s.get('max_chars_per_article', 3000) }}" min="500" max="20000">
                 </div>
             </div>

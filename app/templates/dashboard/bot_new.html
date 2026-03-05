@@ -20,7 +20,11 @@
         </div>
 
         <div class="form-group">
-            <label>Knowledge Base URLs</label>
+            <label style="display:flex; align-items:center; gap:0.4rem;">Knowledge Base URLs
+                <span class="info-wrap" data-tip="Each URL is scraped using the settings below. All articles are merged into one knowledge base. Scraped immediately on creation.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
+            </label>
             <div id="kb-urls-container">
                 <div class="kb-url-row" style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
                     <input type="url" name="kb_url"
@@ -34,7 +38,11 @@
         </div>
 
         <div class="form-group">
-            <label for="additional_guidelines">Additional Guidelines</label>
+            <label for="additional_guidelines" style="display:flex; align-items:center; gap:0.4rem;">Additional Guidelines
+                <span class="info-wrap" data-tip="Free-text instructions injected into the bot's system prompt. Define tone, scope, or rules — e.g. 'Always respond in Filipino'.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
+            </label>
             <textarea id="additional_guidelines" name="additional_guidelines"
                 placeholder="Optional instructions injected into the bot's system prompt."></textarea>
         </div>
@@ -43,54 +51,84 @@
             <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:fit-content; white-space:nowrap;">
                 <input type="checkbox" name="is_public" checked>
                 Public
+                <span class="info-wrap" data-tip="Public bots are visible to all visitors. Private bots are only visible to you and users with an assigned role.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
             </label>
-            <p class="text-muted mt-1">Public bots are visible to all users. Private bots are only visible to you and users with assigned roles.</p>
         </div>
 
         <div class="form-group">
             <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:fit-content; white-space:nowrap;">
                 <input type="checkbox" name="auto_fix_enabled">
                 Enable Auto-Fix
+                <span class="info-wrap" data-tip="Reported mistakes are analyzed by AI and automatically applied to guidelines when no conflict is found.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
             </label>
-            <p class="text-muted mt-1">When enabled, reported mistakes are analyzed and applied to guidelines automatically.</p>
         </div>
 
         <div class="form-group">
             <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:fit-content; white-space:nowrap;">
                 <input type="checkbox" name="allow_override">
                 Allow Override on Conflict
+                <span class="info-wrap" data-tip="When Auto-Fix finds a conflict with existing guidelines, apply the fix anyway. If unchecked, conflicts are held for manual review.">
+                    <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                </span>
             </label>
-            <p class="text-muted mt-1">When auto-fix detects a conflict with existing guidelines, the fix wins automatically. If unchecked, conflicts require manual review.</p>
         </div>
 
         <details class="scraper-settings" style="margin-bottom:1rem;">
             <summary>Scraper Settings</summary>
             <div class="scraper-settings-body">
                 <div class="form-group">
-                    <label for="scraper_max_articles">Max Articles</label>
+                    <label for="scraper_max_articles" style="display:flex;align-items:center;gap:0.4rem;">Max Articles
+                        <span class="info-wrap" data-tip="Maximum number of articles to scrape across all KB URLs. Scraping stops once this limit is reached.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_max_articles" name="scraper_max_articles" value="30" min="1" max="200">
                 </div>
                 <div class="form-group">
-                    <label for="scraper_depth">Crawl Depth</label>
+                    <label for="scraper_depth" style="display:flex;align-items:center;gap:0.4rem;">Crawl Depth
+                        <span class="info-wrap" data-tip="How many levels of links to follow from the starting URL. Depth 1 = only pages linked directly from the start URL. Higher values scrape more pages but take longer.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_depth" name="scraper_depth" value="1" min="1" max="5">
                 </div>
                 <div class="form-group">
-                    <label for="scraper_strategy">Traversal Strategy</label>
+                    <label for="scraper_strategy" style="display:flex;align-items:center;gap:0.4rem;">Traversal Strategy
+                        <span class="info-wrap" data-tip="BFS (breadth-first) visits all pages at the current depth before going deeper — good for broad topic coverage. DFS (depth-first) follows each link chain fully before backtracking — good for deeply nested topics.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <select id="scraper_strategy" name="scraper_strategy">
                         <option value="bfs">BFS — broad coverage (recommended)</option>
                         <option value="dfs">DFS — follow topics deeply</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="scraper_delay_ms">Request Delay (ms)</label>
+                    <label for="scraper_delay_ms" style="display:flex;align-items:center;gap:0.4rem;">Request Delay (ms)
+                        <span class="info-wrap" data-tip="Wait time between each page request in milliseconds. A delay of 500ms is polite to the server. Set to 0 for fastest scraping, but this may trigger rate limiting.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_delay_ms" name="scraper_delay_ms" value="500" min="0" max="5000">
                 </div>
                 <div class="form-group">
-                    <label for="scraper_timeout_s">Request Timeout (s)</label>
+                    <label for="scraper_timeout_s" style="display:flex;align-items:center;gap:0.4rem;">Request Timeout (s)
+                        <span class="info-wrap" data-tip="How long to wait for a page to load before giving up. Increase this for slow websites. Pages that exceed the timeout are skipped.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_timeout_s" name="scraper_timeout_s" value="20" min="5" max="60">
                 </div>
                 <div class="form-group">
-                    <label for="scraper_max_chars">Max Characters per Article</label>
+                    <label for="scraper_max_chars" style="display:flex;align-items:center;gap:0.4rem;">Max Characters per Article
+                        <span class="info-wrap" data-tip="Each article's body text is truncated to this length before being stored. Lower values reduce knowledge base size; higher values preserve more detail per article.">
+                            <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
+                        </span>
+                    </label>
                     <input type="number" id="scraper_max_chars" name="scraper_max_chars" value="3000" min="500" max="20000">
                 </div>
             </div>

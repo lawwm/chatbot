@@ -6,6 +6,7 @@
     <title>{% block title %}Atome Bot{% endblock %}</title>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css">
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -32,5 +33,39 @@
     <main class="container">
         {% block content %}{% endblock %}
     </main>
+
+    <!-- Info modal -->
+    <div id="info-modal" onclick="if(event.target===this)closeInfoModal()"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;align-items:center;justify-content:center;">
+        <div style="background:var(--surface);border-radius:var(--radius);padding:1.5rem;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+            <p id="info-modal-text" style="font-size:0.9rem;line-height:1.65;color:var(--text);"></p>
+            <button onclick="closeInfoModal()" style="margin-top:1.25rem;display:inline-flex;align-items:center;padding:0.4rem 1rem;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:0.875rem;cursor:pointer;">Close</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.min.js"></script>
+    <script>
+    document.querySelectorAll('.info-btn').forEach(function(btn) {
+        var wrap = btn.closest('.info-wrap');
+        var text = wrap && wrap.dataset.tip;
+        if (!text) return;
+        tippy(btn, {
+            content: text,
+            placement: 'top',
+            arrow: true,
+            theme: 'dark-custom',
+            maxWidth: 260,
+        });
+        btn.addEventListener('click', function() {
+            document.getElementById('info-modal-text').textContent = text;
+            document.getElementById('info-modal').style.display = 'flex';
+        });
+    });
+
+    function closeInfoModal() {
+        document.getElementById('info-modal').style.display = 'none';
+    }
+    </script>
 </body>
 </html>
