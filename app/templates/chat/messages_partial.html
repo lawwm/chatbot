@@ -2,7 +2,7 @@
     <div class="chat-bubble text-sm leading-relaxed !bg-gray-100 !text-gray-900">{{ render_markdown(assistant_message.content) }}</div>
     <div class="chat-footer mt-1">
         <button class="text-xs text-base-content/30 hover:text-base-content/60 transition-colors cursor-pointer bg-transparent border-none"
-            onclick="openReportModal('{{ assistant_message.content | replace("'", "\\'") | replace('\n', ' ') }}')">
+            onclick="openReportModal('{{ assistant_message.content | replace("'", "\\'") | replace('\n', ' ') }}', lastUserMessage)">
             Report mistake
         </button>
     </div>
