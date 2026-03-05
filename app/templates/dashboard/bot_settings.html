@@ -130,6 +130,15 @@
             <p class="text-muted mt-1">When auto-fix detects a conflict with existing guidelines, the fix wins automatically. If unchecked, conflicts require manual review.</p>
         </div>
 
+        <div class="form-group">
+            <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; width:fit-content; white-space:nowrap;">
+                <input type="checkbox" name="is_public"
+                    {% if bot.is_public %}checked{% endif %}>
+                Public
+            </label>
+            <p class="text-muted mt-1">Public bots are visible to all users. Private bots are only visible to you and users with assigned roles.</p>
+        </div>
+
         <details class="scraper-settings" style="margin-bottom:1rem;">
             <summary>Scraper Settings</summary>
             <div class="scraper-settings-body">

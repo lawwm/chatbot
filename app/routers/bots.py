@@ -39,8 +39,14 @@ async def dashboard(request: Request):
             bots = await db.bots.find().to_list(None)
         else:
             user_roles = await db.user_roles.find({"user_id": user_id}).to_list(None)
-            bot_ids = [ObjectId(ur["bot_id"]) for ur in user_roles]
-            bots = await db.bots.find({"_id": {"$in": bot_ids}}).to_list(None)
+            role_bot_ids = [ObjectId(ur["bot_id"]) for ur in user_roles]
+            bots = await db.bots.find({
+                "$or": [
+                    {"is_public": True},
+                    {"_id": {"$in": role_bot_ids}},
+                    {"created_by": user_id},
+                ]
+            }).to_list(None)
         for bot in bots:
             bot["_id"] = str(bot["_id"])
             if is_creator or bot.get("created_by") == user_id:
@@ -49,7 +55,7 @@ async def dashboard(request: Request):
                 bitmap = await get_user_permission_bitmap(user_id, bot["_id"])
                 bot["can_settings"] = bool(bitmap & Permission.VIEW_SETTINGS)
     else:
-        bots = await db.bots.find().to_list(None)
+        bots = await db.bots.find({"is_public": True}).to_list(None)
         for bot in bots:
             bot["_id"] = str(bot["_id"])
             bot["can_settings"] = False
@@ -71,6 +77,7 @@ async def create_bot(
     additional_guidelines: str = Form(""),
     auto_fix_enabled: str = Form(None),
     allow_override: str = Form(None),
+    is_public: str = Form(None),
     scraper_max_articles: int = Form(30),
     scraper_depth: int = Form(1),
     scraper_strategy: str = Form("bfs"),
@@ -110,6 +117,7 @@ async def create_bot(
         "additional_guidelines": additional_guidelines,
         "auto_fix_enabled": auto_fix_enabled == "on",
         "allow_override": allow_override == "on",
+        "is_public": is_public == "on",
         "system_prompt": "",
         "created_by": str(user["_id"]),
         "created_at": datetime.utcnow(),

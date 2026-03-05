@@ -88,6 +88,7 @@ async def update_settings(
     additional_guidelines: str = Form(None),
     auto_fix_enabled: str = Form(None),
     allow_override: str = Form(None),
+    is_public: str = Form(None),
     scraper_max_articles: int = Form(None),
     scraper_depth: int = Form(None),
     scraper_strategy: str = Form(None),
@@ -100,6 +101,10 @@ async def update_settings(
     user_id = str(user["_id"])
     bitmap = await get_user_permission_bitmap(user_id, bot_id)
     is_creator = await has_creation_role(user)
+    bot = await get_bot_or_404(bot_id)
+    if not bot:
+        return RedirectResponse("/dashboard", status_code=302)
+    is_bot_owner = bot.get("created_by") == user_id
 
     form_data = await request.form()
     kb_urls = [u.strip() for u in form_data.getlist("kb_url") if u.strip()]
@@ -132,10 +137,12 @@ async def update_settings(
         updates["auto_fix_enabled"] = auto_fix_enabled == "on"
         updates["allow_override"] = allow_override == "on"
 
+    if is_creator or is_bot_owner:
+        updates["is_public"] = is_public == "on"
+
     await db.bots.update_one({"_id": ObjectId(bot_id)}, {"$set": updates})
 
     if trigger_scrape:
-        bot = await get_bot_or_404(bot_id)
         scraper_settings = bot.get("scraper_settings")
         scrape_progress.start(bot_id)
 
