@@ -23,6 +23,11 @@
   - [11. Triggering Knowledge Base Scraping](#11-triggering-knowledge-base-scraping)
   - [12. Updating Bot Settings via Conversation](#12-updating-bot-settings-via-conversation)
   - [13. Reviewing and Fixing Mistakes via Metabot](#13-reviewing-and-fixing-mistakes-via-metabot)
+- [Additional Features](#additional-features)
+  - [14. Authentication](#14-authentication)
+  - [15. Roles & Granular Permissions](#15-roles--granular-permissions)
+  - [16. Multi-Bot Dashboard](#16-multi-bot-dashboard)
+  - [17. Public vs Private Bots](#17-public-vs-private-bots)
 
 ---
 
@@ -235,6 +240,104 @@ Managers can review, analyze, and fix reported mistakes entirely through the Met
 
 <!-- SCREENSHOT: Metabot confirming the fix was applied and the mistake archived -->
 
+---
+
+## Additional Features
+
+### 14. Authentication
+
+The dashboard is fully protected by server-side session authentication. Customers access the chat with no login required; only managers need credentials.
+
+**Logging in:**
+1. Go to `/auth/login`.
+2. Enter your username and password.
+3. On success you are redirected to the **Dashboard**.
+4. A session cookie is set (HTTPOnly, server-side session stored in MongoDB with a configurable TTL).
+
+**Logging out:**
+1. Click **Logout** in the top navigation bar.
+2. The session is invalidated and the cookie is cleared immediately.
+
+**Access control:**
+- Unauthenticated users trying to reach `/dashboard` or any protected route are redirected to `/auth/login`.
+- Customer chat at `/chat/{slug}` is always public — no login required.
+
+<!-- SCREENSHOT: Login page -->
+
+<!-- SCREENSHOT: Dashboard after login showing the user's bots -->
+
+---
+
+### 15. Roles & Granular Permissions
+
+Each bot has its own role system. A creator can define named roles with any combination of the eight available permissions, then assign those roles to specific users. This lets you give a support agent access to review mistakes without letting them delete the bot or change guidelines.
+
+**Available permissions:**
+
+| Permission | What it grants |
+|---|---|
+| `VIEW_SETTINGS` | View the bot's settings page |
+| `EDIT_KB_URL` | Add or change knowledge base URLs |
+| `EDIT_GUIDELINES` | Edit additional guidelines |
+| `TOGGLE_AUTOFIX` | Enable or disable auto-fix |
+| `REVIEW_MISTAKES` | View and analyze reported mistakes |
+| `APPROVE_FIXES` | Apply or dismiss a suggested fix |
+| `MANAGE_ROLES` | Create, delete, assign, and revoke roles |
+| `DELETE_BOT` | Delete the bot entirely |
+
+**Creating a role:**
+1. Go to **Dashboard → (Bot) → Roles**.
+2. Enter a role name (e.g. *"Support Agent"*).
+3. Check the permissions to grant.
+4. Click **Create Role**.
+
+<!-- SCREENSHOT: Roles page showing the role creation form with permission checkboxes -->
+
+**Assigning a role to a user:**
+1. Under the role card, enter a username.
+2. Click **Assign**.
+3. The user immediately gains those permissions on this bot.
+
+<!-- SCREENSHOT: Role card showing an assigned user with a Revoke button -->
+
+**Revoking and deleting:**
+- Click **Revoke** next to a username to remove their assignment.
+- Click **Delete Role** to permanently remove the role and all its assignments.
+
+<!-- SCREENSHOT: Roles page showing multiple roles with assigned users -->
+
+---
+
+### 16. Multi-Bot Dashboard
+
+The platform supports any number of bots. The dashboard gives a bird's-eye view of every bot you own or have been assigned a role on.
+
+**Steps:**
+1. Log in and go to `/dashboard`.
+2. Each bot card shows the bot name and its public chat link (`/chat/{slug}`).
+3. Quick links — **Settings**, **Mistakes**, **Roles** — appear on each card for bots you have access to manage.
+4. Click **New Bot** to create another bot. Each bot has its own independent knowledge base, guidelines, role assignments, and mistake history.
+
+<!-- SCREENSHOT: Dashboard showing multiple bot cards with their quick-action links -->
+
+---
+
+### 17. Public vs Private Bots
+
+Each bot can be set to **public** (anyone with the link can chat) or **private** (only users with an assigned role can access the chat).
+
+**Setting visibility:**
+1. Go to **Dashboard → (Bot) → Settings**.
+2. Toggle the **Public** checkbox.
+3. Click **Save Settings**.
+
+**Effect:**
+- **Public on:** `/chat/{slug}` is accessible to anyone without logging in.
+- **Public off:** Unauthenticated visitors to `/chat/{slug}` are turned away. Only users who have been assigned a role on that bot (and are logged in) can access the chat.
+
+<!-- SCREENSHOT: Settings page showing the Public toggle checkbox -->
+
+---
 
 ## Use MetaBot to create a bot via conversation:
 
