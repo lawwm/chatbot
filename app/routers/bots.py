@@ -190,10 +190,13 @@ async def delete_bot(request: Request, bot_id: str, user: dict = Depends(require
         return RedirectResponse(f"/dashboard/bots/{bot_id}/settings", status_code=302)
 
     await db.bots.delete_one({"_id": ObjectId(bot_id)})
+    await db.kb_content.delete_many({"bot_id": bot_id})
+    await db.kb_vectors.delete_many({"bot_id": bot_id})
+    await db.conversations.delete_many({"bot_id": bot_id})
+    await db.mistakes.delete_many({"bot_id": bot_id})
+    await db.mistakes_archive.delete_many({"bot_id": bot_id})
     await db.roles.delete_many({"bot_id": bot_id})
     await db.user_roles.delete_many({"bot_id": bot_id})
-    await db.kb_content.delete_many({"bot_id": bot_id})
-    await db.mistakes.delete_many({"bot_id": bot_id})
     return RedirectResponse("/dashboard", status_code=302)
 
 

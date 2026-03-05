@@ -5,7 +5,7 @@ from app.database import get_db
 logger = logging.getLogger(__name__)
 
 
-async def retrieve_chunks(bot_id: str, query: str, top_k: int = 5) -> str:
+async def retrieve_chunks(bot_id: str, query: str, top_k: int = 10) -> str:
     if not settings.voyage_api_key:
         return ""
     try:
@@ -37,11 +37,14 @@ async def retrieve_chunks(bot_id: str, query: str, top_k: int = 5) -> str:
                     "filter": {"bot_id": {"$eq": bot_id}},
                 }
             },
-            {"$project": {"text": 1, "_id": 0}},
+            {"$project": {"text": 1, "score": {"$meta": "vectorSearchScore"}, "_id": 0}},
         ]
         cursor = db.kb_vectors.aggregate(pipeline)
-        chunks = [doc["text"] async for doc in cursor]
+        results = [doc async for doc in cursor]
+        chunks = [doc["text"] for doc in results]
         logger.warning("VECTOR DEBUG — filtered search returned %d chunks", len(chunks))
+        for i, doc in enumerate(results):
+            logger.warning("  [%d] score=%.4f  %s", i, doc.get("score", 0), doc["text"][:80].replace("\n", " "))
 
         # If filter returned nothing but vectors exist, try without filter (index may lack filter field)
         if not chunks:
@@ -67,7 +70,9 @@ async def retrieve_chunks(bot_id: str, query: str, top_k: int = 5) -> str:
 
         if not chunks:
             return ""
-        logger.info("Retrieved %d chunks for bot=%s query=%r", len(chunks), bot_id, query[:60])
+        logger.warning("Retrieved %d chunks for bot=%s query=%r", len(chunks), bot_id, query[:60])
+        for i, chunk in enumerate(chunks):
+            logger.warning("  chunk[%d]: %s", i, chunk[:120].replace("\n", " "))
         return "\n\n---\n\n".join(chunks)
     except Exception as e:
         logger.error("retrieve_chunks failed for bot=%s: %s", bot_id, e)

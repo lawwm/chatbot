@@ -75,7 +75,7 @@ async def chat(
 ) -> tuple[str, list[dict]]:
     """Send messages to Claude and return (assistant_text, tool_calls_used)."""
     system = build_system_prompt(kb_content, additional_guidelines)
-    claude_messages = [{"role": m["role"], "content": m["content"]} for m in messages]
+    claude_messages = [{"role": m["role"], "content": m["content"]} for m in messages[-20:]]
     tool_calls_used: list[dict] = []
 
     while True:
