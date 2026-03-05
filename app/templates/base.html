@@ -33,9 +33,9 @@
             <a href="/dashboard">Bots</a>
             {% if user %}
             {% if user.allow_create_agent %}
-            <a href="/meta">Meta</a>
+            <a href="/meta">Metabot</a>
             {% endif %}
-            <form method="post" action="/auth/logout" style="display:inline">
+            <form method="post" action="/auth/logout" style="display:contents">
                 <button type="submit">Logout</button>
             </form>
             {% else %}
