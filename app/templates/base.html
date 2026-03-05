@@ -6,6 +6,21 @@
     <title>{% block title %}Atome Bot{% endblock %}</title>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        @keyframes btn-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+        .btn-loading { position: relative; color: transparent !important; pointer-events: none; }
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0.9em; height: 0.9em;
+            border: 2px solid rgba(255,255,255,0.35);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: btn-spin 0.55s linear infinite;
+        }
+    </style>
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css">
     {% block head %}{% endblock %}
 </head>
@@ -66,6 +81,25 @@
     function closeInfoModal() {
         document.getElementById('info-modal').style.display = 'none';
     }
+
+    // Global submit-button spinner
+    (function () {
+        var lastBtn = null;
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('button[type="submit"]');
+            if (btn && !btn.disabled) lastBtn = btn;
+        }, true);
+
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (form.hasAttribute('hx-post') || form.hasAttribute('hx-get')) return;
+            var btn = lastBtn; lastBtn = null;
+            if (!btn) btn = form.querySelector('button[type="submit"]:not([disabled])');
+            if (!btn || btn.disabled) return;
+            btn.disabled = true;
+            btn.classList.add('btn-loading');
+        });
+    })();
     </script>
 </body>
 </html>

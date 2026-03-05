@@ -202,3 +202,20 @@ body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--t
 .banner-close { background:none; border:none; cursor:pointer; color:inherit; opacity:0.7; padding:0; display:inline-flex; align-items:center; flex-shrink:0; }
 .banner-close:hover { opacity:1; }
 .banner-spinner { width:16px; height:16px; border:2px solid rgba(0,0,0,0.15); border-top-color:var(--primary); border-radius:50%; animation:spin 0.7s linear infinite; flex-shrink:0; }
+
+/* Markdown rendered content */
+.md-content table { border-collapse:collapse; margin:0.5rem 0; font-size:0.85em; width:100%; }
+.md-content th, .md-content td { border:1px solid var(--border); padding:0.3rem 0.6rem; text-align:left; }
+.md-content th { background:var(--surface); font-weight:600; }
+.md-content tr:nth-child(even) td { background:var(--bg); }
+.md-content p { margin:0.25rem 0; }
+.md-content ul, .md-content ol { margin:0.25rem 0 0.25rem 1.2rem; }
+.md-content li { margin:0.1rem 0; }
+.md-content code { background:var(--surface); padding:0.1rem 0.3rem; border-radius:3px; font-size:0.85em; }
+.md-content pre { background:#1f2937; color:#f9fafb; padding:0.6rem 0.8rem; border-radius:6px; overflow-x:auto; margin:0.4rem 0; font-size:0.82em; }
+.md-content pre code { background:none; padding:0; color:inherit; }
+.md-content strong { font-weight:600; }
+.md-content h1, .md-content h2, .md-content h3 { font-weight:600; margin:0.4rem 0 0.2rem; }
+.md-content h1 { font-size:1rem; }
+.md-content h2 { font-size:0.95rem; }
+.md-content h3 { font-size:0.9rem; }

@@ -10,6 +10,7 @@ from app.dependencies import require_auth
 from app.services.permissions import get_user_permission_bitmap, has_creation_role
 from app.services.claude import suggest_fix, merge_guidelines
 from app.models.role import Permission
+from app.utils import render_markdown
 
 router = APIRouter(tags=["mistakes"])
 templates = Jinja2Templates(directory="app/templates")
@@ -91,6 +92,7 @@ async def mistakes_page(request: Request, bot_id: str, user: dict = Depends(requ
         "request": request, "user": user, "bot": bot,
         "open_mistakes": open_mistakes, "archived": archived,
         "can_approve": can_approve,
+        "render_markdown": render_markdown,
     })
 
 

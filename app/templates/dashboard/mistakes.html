@@ -26,7 +26,7 @@
             </div>
             <div>
                 <p style="font-size:0.75rem; font-weight:600; color:var(--text-muted); margin-bottom:0.25rem;">BOT RESPONDED</p>
-                <p style="font-size:0.9rem;">{{ mistake.bot_response }}</p>
+                <div style="font-size:0.9rem;" class="md-content">{{ render_markdown(mistake.bot_response) }}</div>
             </div>
         </div>
         <div style="background:var(--bg); padding:0.75rem; border-radius:var(--radius); margin-bottom:0.75rem;">

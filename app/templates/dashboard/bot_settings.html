@@ -210,12 +210,12 @@
                             <button type="button" class="info-btn" tabindex="-1">{% include "partials/info_icon.svg" %}</button>
                         </span>
                     </label>
-                    <input type="number" id="scraper_max_chars" name="scraper_max_chars" value="{{ s.get('max_chars_per_article', 3000) }}" min="500" max="20000">
+                    <input type="number" id="scraper_max_chars" name="scraper_max_chars" value="{{ s.get('max_chars_per_article', 3000) }}" min="500">
                 </div>
             </div>
         </details>
 
-        <div class="flex gap-1" style="margin-top:0.25rem;">
+        <div class="flex gap-1" id="save-actions" style="margin-top:0.25rem;">
             {% set save_disabled = (not permissions.edit_kb_url and not permissions.edit_guidelines and not permissions.toggle_autofix) or (request.query_params.get('scraping') or scraping) %}
             {{ primary("Save Settings", disabled=save_disabled) }}
             {% if permissions.edit_kb_url %}
@@ -251,8 +251,9 @@
     </div>
     <!-- Body -->
     {% if request.query_params.get('scraping') or scraping %}
-    <div class="mockup-code" id="scrape-log" style="border-radius:0; margin:0; font-size:0.75rem; max-height:240px; overflow-y:auto;">
-        <pre data-prefix=">"><code style="opacity:0.35;">connecting…</code></pre>
+    <div id="scrape-log" style="padding:0.6rem 1rem; background:var(--surface); font-size:0.78rem; color:var(--text-muted); display:flex; align-items:center; gap:0.6rem;">
+        <span class="loading loading-spinner loading-xs" style="flex-shrink:0;"></span>
+        <span id="scrape-current-url" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Connecting…</span>
     </div>
     {% elif kb_stats and kb_stats.scraped_at %}
     <div id="kb-meta" style="padding:0.65rem 1rem; font-size:0.8rem; color:var(--text-muted); background:var(--surface);">
@@ -266,6 +267,35 @@
 </div>
 
 <script>
+// Save Settings: disable Repopulate button on submit so it can't be double-clicked
+// (the Save button itself is handled by the global spinner in base.html)
+document.querySelector('form[action*="/settings"]').addEventListener('submit', function() {
+    if (repopBtn) { repopBtn.disabled = true; repopBtn.classList.add('disabled'); }
+});
+
+// Immediate visual feedback on Repopulate KB (KB panel only — do NOT disable buttons
+// before submit, as that prevents the browser from submitting the form)
+const repopBtn = document.querySelector('[form="repopulate-form"]');
+if (repopBtn) {
+    repopBtn.addEventListener('click', function() {
+        const countText = document.getElementById('kb-count-text');
+        if (countText) countText.textContent = 'Scraping…';
+
+        const badge = document.getElementById('kb-badge');
+        if (badge) {
+            badge.className = 'badge badge-warning';
+            badge.style.fontFamily = 'inherit';
+            badge.style.gap = '0.4rem';
+            badge.innerHTML = '<span class="loading loading-spinner loading-xs"></span>Live';
+        }
+
+        const kbMeta = document.getElementById('kb-meta');
+        if (kbMeta) {
+            kbMeta.outerHTML = '<div id="scrape-log" style="padding:0.6rem 1rem; background:var(--surface); font-size:0.78rem; color:var(--text-muted); display:flex; align-items:center; gap:0.6rem;"><span class="loading loading-spinner loading-xs" style="flex-shrink:0;"></span><span id="scrape-current-url" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Connecting…</span></div>';
+        }
+    });
+}
+
 function addKbUrl() {
     const container = document.getElementById('kb-urls-container');
     const div = document.createElement('div');
@@ -308,6 +338,7 @@ function addKbUrl() {
             badge.textContent = 'Done';
 
             const meta = document.createElement('div');
+            meta.id = 'kb-meta';
             meta.style.cssText = 'padding:0.65rem 1rem; font-size:0.8rem; color:var(--text-muted); background:var(--surface);';
             meta.textContent = 'Scraped just now';
             log.replaceWith(meta);
@@ -315,14 +346,12 @@ function addKbUrl() {
             const banner = document.getElementById('scraping-banner');
             if (banner) banner.remove();
 
-            document.querySelectorAll('#page-actions .btn').forEach(el => {
+            document.querySelectorAll('#page-actions .btn, #save-actions .btn').forEach(el => {
                 el.removeAttribute('disabled');
                 el.classList.remove('disabled');
                 el.removeAttribute('aria-disabled');
                 el.onclick = null;
             });
-            const saveBtn = document.getElementById('save-btn');
-            if (saveBtn) saveBtn.removeAttribute('disabled');
             return;
         }
 
@@ -335,14 +364,12 @@ function addKbUrl() {
 
         countText.textContent = `${scraped} scraped · ${visited} visited`;
 
-        const pre = document.createElement('pre');
-        pre.setAttribute('data-prefix', ICONS[statusType] || '>');
-        const code = document.createElement('code');
-        code.style.color = COLORS[statusType] || '#94a3b8';
-        code.textContent = url.replace(/^https?:\/\/[^/]+/, '') || url;
-        pre.appendChild(code);
-        log.appendChild(pre);
-        log.scrollTop = log.scrollHeight;
+        const currentUrl = document.getElementById('scrape-current-url');
+        if (currentUrl) {
+            const path = url.replace(/^https?:\/\/[^/]+/, '') || url;
+            currentUrl.textContent = path;
+            currentUrl.style.color = COLORS[statusType] || 'var(--text-muted)';
+        }
     };
 
     es.onerror = function () {

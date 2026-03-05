@@ -69,9 +69,9 @@ async def send_message(request: Request, bot_slug: str, message: str = Form(...)
 
     # Get KB content — try vector retrieval first, fall back to full dump
     kb_urls = bot.get("kb_urls") or ([bot["kb_url"]] if bot.get("kb_url") else [])
-    kb_content = await retrieve_chunks(bot["_id"], message)
+    kb_content = await retrieve_chunks(str(bot["_id"]), message)
     if not kb_content:
-        kb_content = await get_kb_content(bot["_id"], kb_urls, bot.get("scraper_settings"))
+        kb_content = await get_kb_content(str(bot["_id"]), kb_urls, bot.get("scraper_settings"))
 
     # Call Claude
     assistant_text = await claude_chat(messages, kb_content, bot.get("additional_guidelines", ""))
