@@ -55,7 +55,6 @@ INSTRUCTIONS:
     if additional_guidelines.strip():
         prompt += f"\nADDITIONAL GUIDELINES:\n{additional_guidelines}\n"
 
-    print(prompt)
     return prompt
 
 
