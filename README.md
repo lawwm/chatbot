@@ -446,7 +446,7 @@ To prevent this, every suggested fix is checked against the current guidelines b
 
 | Category | Tool |
 |---|---|
-| **Backend** | Python 3.11, FastAPI, Uvicorn |
+| **Backend** | Python 3.12, FastAPI, Uvicorn |
 | **Frontend** | Jinja2 (server-side rendering), HTMX, DaisyUI, Tailwind CSS |
 | **Database** | MongoDB Atlas (Motor async driver) |
 | **AI / LLM** | Anthropic Claude API (Haiku for chat & auto-fix, Sonnet for meta-agent) |
@@ -463,7 +463,7 @@ To prevent this, every suggested fix is checked against the current guidelines b
 This project was built using:
 
 - **[Claude Code](https://claude.ai/code)** with **Claude Sonnet 4.6** (primary coding agent) and **Claude Opus** (architecture planning and complex reasoning)
-- **ChatGPT** with **GPT-4.5** (secondary reference and alternative perspectives during design)
+- **ChatGPT** with **GPT-5.2** (secondary reference and alternative perspectives during design)
 - **Visual Studio Code** (editor)
 
 ---
@@ -476,7 +476,7 @@ This project was built using:
 
 **MongoDB:** Three logical areas of data — bot configuration (`bots`), user/auth data (`users`, `sessions`, `roles`, `user_roles`), and runtime data (`conversations`, `mistakes`, `mistakes_archive`, `kb_content`, `kb_vectors`). Indexes on `slug`, `session_id`, and `username` enforce uniqueness; a TTL index on `sessions.expires_at` automatically purges expired sessions.
 
-**Claude integration:** Chat uses `claude-haiku-4-5` for low-latency responses. The meta-agent and auto-fix pipeline also use Haiku. The model is called in a tool-use loop — if the model returns `stop_reason: tool_use`, the server executes the requested function and feeds the result back, repeating until `stop_reason: end_turn`.
+**Claude integration:** Chat uses `claude-haiku-4-5` for low-latency responses. The meta-agent and auto-fix pipeline also use Haiku. The model is called in a tool-use loop — if the model returns `stop_reason: tool_use`, the server executes the requested function and feeds the result back, repeating until `stop_reason: end_turn`. The tool_use response contains the name of the function, and the server uses it to execute a function from a function table.
 
 **Vector indexing:** When a URL is scraped, each article is split into chunks and embedded using Voyage AI's `voyage-3-lite` model, producing a 512-dimensional dense vector per chunk. These vectors are stored in the `kb_vectors` collection in MongoDB Atlas alongside the source text and `bot_id`. A MongoDB Atlas Vector Search index (`vector_index`) is defined over the `embedding` field using cosine similarity. At query time, the customer's message is embedded with the same Voyage model, and a `$vectorSearch` aggregation pipeline retrieves the top-10 most semantically similar chunks filtered by `bot_id`. This means the bot finds relevant content by meaning, not keyword match — a customer asking *"why was I charged twice?"* will surface articles about duplicate transactions even if those exact words never appear in the knowledge base. If vector search returns no results (e.g. the knowledge base hasn't been scraped yet), the system falls back to injecting the full raw article text into the context.
 
